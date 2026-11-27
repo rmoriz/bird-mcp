@@ -8,6 +8,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Added
+- Windows x86_64 builds (`bird-mcp-x86_64-pc-windows-msvc.zip`) in the release
+  workflow and a Windows job in CI. The server manages routers over ssh on
+  Windows; local `birdc` is not supported there.
 - The OpenCode container joins `as1` at `10.10.1.10` and routes `10.0.0.0/16`
   and `10.10.0.0/16` via r1, so ping/traceroute/mtr reach the lab from the
   agent container.

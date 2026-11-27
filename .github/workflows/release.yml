@@ -33,6 +33,8 @@ jobs:
             target: aarch64-unknown-linux-gnu
           - runner: ubuntu-22.04
             target: x86_64-unknown-linux-gnu
+          - runner: windows-latest
+            target: x86_64-pc-windows-msvc
     steps:
       - uses: actions/checkout@v4
       - uses: dtolnay/rust-toolchain@master
@@ -52,9 +54,16 @@ jobs:
           # Stable asset names keep the /releases/latest/download/<name> URLs valid.
           name="bird-mcp-${{ matrix.target }}"
           mkdir -p "staging/${name}" dist
-          cp "target/${{ matrix.target }}/release/bird-mcp" "staging/${name}/"
           cp README.md LICENSE CHANGELOG.md "staging/${name}/"
-          tar -czf "dist/${name}.tar.gz" -C staging "${name}"
+          if [ "${RUNNER_OS}" = "Windows" ]; then
+            cp "target/${{ matrix.target }}/release/bird-mcp.exe" "staging/${name}/"
+            sevenzip=7z
+            command -v 7z >/dev/null 2>&1 || sevenzip="/c/Program Files/7-Zip/7z.exe"
+            (cd staging && "$sevenzip" a "../dist/${name}.zip" "${name}" >/dev/null)
+          else
+            cp "target/${{ matrix.target }}/release/bird-mcp" "staging/${name}/"
+            tar -czf "dist/${name}.tar.gz" -C staging "${name}"
+          fi
           ls -l dist
 
       - uses: actions/upload-artifact@v4
@@ -81,7 +90,9 @@ jobs:
         run: |
           set -euo pipefail
           cd dist
-          sha256sum ./*.tar.gz > SHA256SUMS
+          find . -maxdepth 1 -type f ! -name SHA256SUMS -print0 \
+            | sort -z | xargs -0 sha256sum > /tmp/SHA256SUMS
+          mv /tmp/SHA256SUMS SHA256SUMS
           cat SHA256SUMS
 
       - name: Publish release

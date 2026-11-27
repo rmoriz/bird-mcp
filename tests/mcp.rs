@@ -1,3 +1,5 @@
+#![cfg(unix)]
+
 //! End-to-end test of the compiled binary over the MCP stdio transport, with a
 //! fake birdc that replays recorded BIRD output.
 

@@ -1,3 +1,5 @@
+#![cfg(unix)]
+
 //! Live end-to-end test against a real BIRD 3.4 instance.
 //!
 //! The lab used for this repository runs BIRD 3.4.0 in a container named

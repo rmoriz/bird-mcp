@@ -56,6 +56,8 @@ probes in parallel as well.
 - `birdc` reachable on the machine running BIRD (local transport) or via ssh.
 - Key-based ssh for remote routers; the transport uses `BatchMode=yes`, so it never
   prompts for a password.
+- On Windows the server manages routers over ssh; a local `birdc` is not
+  supported there. Windows OpenSSH (`ssh.exe`) has to be available.
 
 ## Install
 
@@ -68,6 +70,7 @@ push to `main`, so these links always point at the current build:
 | macOS, Intel | [bird-mcp-x86_64-apple-darwin.tar.gz](https://github.com/rmoriz/bird-mcp/releases/latest/download/bird-mcp-x86_64-apple-darwin.tar.gz) |
 | Linux, arm64 | [bird-mcp-aarch64-unknown-linux-gnu.tar.gz](https://github.com/rmoriz/bird-mcp/releases/latest/download/bird-mcp-aarch64-unknown-linux-gnu.tar.gz) |
 | Linux, x86_64 | [bird-mcp-x86_64-unknown-linux-gnu.tar.gz](https://github.com/rmoriz/bird-mcp/releases/latest/download/bird-mcp-x86_64-unknown-linux-gnu.tar.gz) |
+| Windows, x86_64 | [bird-mcp-x86_64-pc-windows-msvc.zip](https://github.com/rmoriz/bird-mcp/releases/latest/download/bird-mcp-x86_64-pc-windows-msvc.zip) |
 | Checksums | [SHA256SUMS](https://github.com/rmoriz/bird-mcp/releases/latest/download/SHA256SUMS) |
 
 Each archive contains the binary, README, LICENSE and changelog. Fixed versions
