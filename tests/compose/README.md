@@ -93,12 +93,10 @@ AS64515 once a minute.
 
 ## Topology
 
-```
-r1 (AS64512) ── r2 (AS64513) ── r3 (AS64514) ── r4 (AS64515) ── r5 (AS64516)
- │                │                │                │                │
-h1               h2               h3               h4               h5
-sim
-```
+<p align="center">
+  <img src="docs/topology.svg" width="1000"
+       alt="Five BIRD routers in an eBGP ring, one per AS, each with a customer prefix and host; a traffic generator sits behind r1">
+</p>
 
 Each router originates its customer prefix (10.10.N.0/24), exports static and
 BGP routes over eBGP and installs BGP routes in the kernel, so traffic really

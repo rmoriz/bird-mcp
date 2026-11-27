@@ -18,6 +18,11 @@ or over ssh to the router.
 > wired to all five through this MCP server — including blackholing a prefix and
 > watching the traffic stop.
 
+<p align="center">
+  <img src="docs/example.jpg" width="900"
+       alt="OpenCode session against the five-router lab: 5/5 daemons up, 10/10 BGP sessions established, best paths and alternative paths per prefix">
+</p>
+
 ## Tools
 
 | Tool | What it does | Writes |

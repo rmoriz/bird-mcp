@@ -1,0 +1,123 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1240 860" width="1240" height="860"
+     role="img" aria-labelledby="lab-topology-title lab-topology-desc"
+     font-family="ui-sans-serif, -apple-system, 'Segoe UI', sans-serif">
+  <title id="lab-topology-title">Five-AS BIRD lab topology</title>
+  <desc id="lab-topology-desc">Five BIRD 3.4 routers, one per AS, connected in an eBGP ring. Each router originates a 10.10.N.0/24 prefix and has one customer host; a traffic generator sits behind r1.</desc>
+
+  <rect width="1240" height="860" fill="#f7f7f5"/>
+
+  <text x="60" y="60" font-family="Georgia, 'Times New Roman', serif" font-size="30" fill="#1f2933">Five-AS BIRD lab</text>
+  <text x="60" y="88" font-size="14" fill="#6b7280">Five BIRD 3.4 routers · eBGP ring · kernel forwarding · routes managed through BIRD-MCP</text>
+
+  <!-- eBGP links -->
+  <g stroke="#b8b2a8" stroke-width="2">
+    <line x1="620" y1="175" x2="1050" y2="345"/>
+    <line x1="1050" y1="345" x2="880" y2="645"/>
+    <line x1="880" y1="645" x2="360" y2="645"/>
+    <line x1="360" y1="645" x2="190" y2="345"/>
+    <line x1="190" y1="345" x2="620" y2="175"/>
+  </g>
+
+  <!-- link labels -->
+  <g font-family="ui-monospace, 'SF Mono', Menlo, monospace" font-size="11" fill="#6b7280" text-anchor="middle">
+    <rect x="790" y="243" width="92" height="16" fill="#f7f7f5"/>
+    <text x="836" y="255">10.0.12.0/29</text>
+
+    <rect x="902" y="517" width="92" height="16" fill="#f7f7f5"/>
+    <text x="948" y="529">10.0.23.0/29</text>
+
+    <rect x="574" y="627" width="92" height="16" fill="#f7f7f5"/>
+    <text x="620" y="639">10.0.34.0/29</text>
+
+    <rect x="246" y="517" width="92" height="16" fill="#f7f7f5"/>
+    <text x="292" y="529">10.0.45.0/29</text>
+
+    <rect x="359" y="243" width="92" height="16" fill="#f7f7f5"/>
+    <text x="405" y="255">10.0.51.0/29</text>
+  </g>
+
+  <!-- host and sim links -->
+  <g stroke="#b8b2a8" stroke-width="2">
+    <line x1="560" y1="220" x2="550" y2="300"/>
+    <line x1="680" y1="220" x2="805" y2="300"/>
+    <polyline points="1050,390 1050,415 1140,415 1140,440" fill="none"/>
+    <line x1="880" y1="690" x2="880" y2="740"/>
+    <line x1="360" y1="690" x2="360" y2="740"/>
+    <polyline points="190,390 190,415 140,415 140,440" fill="none"/>
+  </g>
+
+  <!-- routers -->
+  <g>
+    <rect x="520" y="130" width="200" height="90" rx="6" fill="#ffffff" stroke="#d6d1c8" stroke-width="1.5"/>
+    <text x="538" y="160" font-size="18" font-weight="600" fill="#1f2933">r1</text>
+    <text x="538" y="182" font-family="ui-monospace, 'SF Mono', Menlo, monospace" font-size="12" fill="#6b7280">AS64512</text>
+    <text x="538" y="205" font-family="ui-monospace, 'SF Mono', Menlo, monospace" font-size="13" fill="#1f2933">10.10.1.0/24</text>
+  </g>
+  <g>
+    <rect x="950" y="300" width="200" height="90" rx="6" fill="#ffffff" stroke="#d6d1c8" stroke-width="1.5"/>
+    <text x="968" y="330" font-size="18" font-weight="600" fill="#1f2933">r2</text>
+    <text x="968" y="352" font-family="ui-monospace, 'SF Mono', Menlo, monospace" font-size="12" fill="#6b7280">AS64513</text>
+    <text x="968" y="375" font-family="ui-monospace, 'SF Mono', Menlo, monospace" font-size="13" fill="#1f2933">10.10.2.0/24</text>
+  </g>
+  <g>
+    <rect x="780" y="600" width="200" height="90" rx="6" fill="#ffffff" stroke="#d6d1c8" stroke-width="1.5"/>
+    <text x="798" y="630" font-size="18" font-weight="600" fill="#1f2933">r3</text>
+    <text x="798" y="652" font-family="ui-monospace, 'SF Mono', Menlo, monospace" font-size="12" fill="#6b7280">AS64514</text>
+    <text x="798" y="675" font-family="ui-monospace, 'SF Mono', Menlo, monospace" font-size="13" fill="#1f2933">10.10.3.0/24</text>
+  </g>
+  <g>
+    <rect x="260" y="600" width="200" height="90" rx="6" fill="#ffffff" stroke="#d6d1c8" stroke-width="1.5"/>
+    <text x="278" y="630" font-size="18" font-weight="600" fill="#1f2933">r4</text>
+    <text x="278" y="652" font-family="ui-monospace, 'SF Mono', Menlo, monospace" font-size="12" fill="#6b7280">AS64515</text>
+    <text x="278" y="675" font-family="ui-monospace, 'SF Mono', Menlo, monospace" font-size="13" fill="#1f2933">10.10.4.0/24</text>
+  </g>
+  <g>
+    <rect x="90" y="300" width="200" height="90" rx="6" fill="#ffffff" stroke="#d6d1c8" stroke-width="1.5"/>
+    <text x="108" y="330" font-size="18" font-weight="600" fill="#1f2933">r5</text>
+    <text x="108" y="352" font-family="ui-monospace, 'SF Mono', Menlo, monospace" font-size="12" fill="#6b7280">AS64516</text>
+    <text x="108" y="375" font-family="ui-monospace, 'SF Mono', Menlo, monospace" font-size="13" fill="#1f2933">10.10.5.0/24</text>
+  </g>
+
+  <!-- hosts -->
+  <g>
+    <rect x="470" y="300" width="160" height="52" rx="6" fill="#ffffff" stroke="#d6d1c8" stroke-width="1.5"/>
+    <text x="486" y="324" font-size="14" font-weight="600" fill="#1f2933">h1</text>
+    <text x="516" y="324" font-family="ui-monospace, 'SF Mono', Menlo, monospace" font-size="12" fill="#6b7280">10.10.1.3</text>
+    <text x="486" y="342" font-size="11" fill="#6b7280">HTTP · iperf3</text>
+  </g>
+  <g>
+    <rect x="1060" y="440" width="160" height="52" rx="6" fill="#ffffff" stroke="#d6d1c8" stroke-width="1.5"/>
+    <text x="1076" y="464" font-size="14" font-weight="600" fill="#1f2933">h2</text>
+    <text x="1106" y="464" font-family="ui-monospace, 'SF Mono', Menlo, monospace" font-size="12" fill="#6b7280">10.10.2.3</text>
+    <text x="1076" y="482" font-size="11" fill="#6b7280">HTTP · iperf3</text>
+  </g>
+  <g>
+    <rect x="800" y="740" width="160" height="52" rx="6" fill="#ffffff" stroke="#d6d1c8" stroke-width="1.5"/>
+    <text x="816" y="764" font-size="14" font-weight="600" fill="#1f2933">h3</text>
+    <text x="846" y="764" font-family="ui-monospace, 'SF Mono', Menlo, monospace" font-size="12" fill="#6b7280">10.10.3.3</text>
+    <text x="816" y="782" font-size="11" fill="#6b7280">HTTP · iperf3</text>
+  </g>
+  <g>
+    <rect x="280" y="740" width="160" height="52" rx="6" fill="#ffffff" stroke="#d6d1c8" stroke-width="1.5"/>
+    <text x="296" y="764" font-size="14" font-weight="600" fill="#1f2933">h4</text>
+    <text x="326" y="764" font-family="ui-monospace, 'SF Mono', Menlo, monospace" font-size="12" fill="#6b7280">10.10.4.3</text>
+    <text x="296" y="782" font-size="11" fill="#6b7280">HTTP · iperf3</text>
+  </g>
+  <g>
+    <rect x="60" y="440" width="160" height="52" rx="6" fill="#ffffff" stroke="#d6d1c8" stroke-width="1.5"/>
+    <text x="76" y="464" font-size="14" font-weight="600" fill="#1f2933">h5</text>
+    <text x="106" y="464" font-family="ui-monospace, 'SF Mono', Menlo, monospace" font-size="12" fill="#6b7280">10.10.5.3</text>
+    <text x="76" y="482" font-size="11" fill="#6b7280">HTTP · iperf3</text>
+  </g>
+
+  <!-- traffic generator -->
+  <g>
+    <rect x="690" y="300" width="230" height="52" rx="6" fill="#ffffff" stroke="#bf4520" stroke-width="1.5"/>
+    <text x="706" y="324" font-size="14" font-weight="600" fill="#bf4520">sim</text>
+    <text x="742" y="324" font-family="ui-monospace, 'SF Mono', Menlo, monospace" font-size="12" fill="#1f2933">10.10.1.4</text>
+    <text x="706" y="342" font-size="11" fill="#6b7280">ping · HTTP · iperf3</text>
+  </g>
+
+  <text x="60" y="828" font-size="12" fill="#6b7280">Every router includes <tspan font-family="ui-monospace, 'SF Mono', Menlo, monospace" fill="#1f2933">/etc/bird/state/bird-mcp.conf</tspan>; <tspan font-family="ui-monospace, 'SF Mono', Menlo, monospace" fill="#1f2933">bird_routes_edit</tspan> writes there, checks and reloads.</text>
+</svg>
