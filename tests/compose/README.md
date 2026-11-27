@@ -200,11 +200,18 @@ The records look like a registry export but are deliberately fictional:
 | `10.0.45.0 - 10.0.45.7` | `LAB-LINK-R4-R5` | eBGP link r4 – r5 |
 | `10.0.51.0 - 10.0.51.7` | `LAB-LINK-R5-R1` | eBGP link r5 – r1 |
 
+Each `/24` also has a fictional reverse-zone object (`domain:`), for example
+`3.10.10.in-addr.arpa` with `nserver: dns.lab 10.99.0.53`. An address query
+returns the inetnum plus its zone, and zones can be queried by name. The actual
+PTR answers come from `dns.lab`; the WHOIS objects are the registry metadata.
+
 ```sh
 # from the OpenCode container
 docker compose exec opencode whois -h whois.lab 10.10.3.0
 docker compose exec opencode whois -h whois.lab 10.10.3.0/24
 docker compose exec opencode whois -h whois.lab 10.0.12.0
+docker compose exec opencode whois -h whois.lab 3.10.10.in-addr.arpa
+docker compose exec opencode whois -h whois.lab 12.0.10.in-addr.arpa
 
 # from the host (macOS/Linux whois client)
 whois -h 127.0.0.1 -p 4343 10.10.4.0

@@ -21,9 +21,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - The OpenCode lab image includes a network toolbox: `mtr`, `traceroute`,
   `tracepath`, `ping`, `fping`, `arping`, `dig`, `nc`, `socat`, `tcpdump`,
   `iperf3`, `ethtool` and `whois`.
-- The compose lab runs a small fictional RIPE-style WHOIS server with static `inetnum`
-  objects for the five customer prefixes and eBGP links (`whois/data.txt`,
-  reachable as `whois` inside the lab and `localhost:4343` on the host).
+- The compose lab runs a small fictional RIPE-style WHOIS server with static
+  `inetnum` and `domain` objects for the five customer prefixes and eBGP links
+  (`whois/data.txt`); address queries include the matching `/24` PTR zone, and
+  zones are queryable by name. Reachable as `whois.lab` in the lab and
+  `localhost:4343` on the host.
 - `bird_fleet` runs a read-only check (status, protocols, routes, interfaces) on
   many routers in parallel with bounded concurrency, returning per-router
   results and `elapsed_ms`. `bird_routers` probes run in parallel too.

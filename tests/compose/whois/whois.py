@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Minimal RIPE-style WHOIS server for the lab's static inetnum data."""
+"""Minimal RIPE-style WHOIS server for the lab's static inetnum and domain data."""
 
 import ipaddress
 import socketserver
@@ -20,6 +20,12 @@ def load_objects(path):
                     continue
                 key, value = line.split(":", 1)
                 fields.setdefault(key.strip().lower(), value.strip())
+
+            domain = fields.get("domain")
+            if domain:
+                objects.append({"raw": block, "domain": domain.lower()})
+                continue
+
             inetnum = fields.get("inetnum")
             if not inetnum:
                 continue
@@ -31,7 +37,7 @@ def load_objects(path):
                     "end": int(ipaddress.ip_address(end_text)),
                 }
             )
-    objects.sort(key=lambda item: item["start"])
+    objects.sort(key=lambda item: item.get("start", 2**64))
     return objects
 
 
@@ -56,35 +62,73 @@ def parse_query(query):
     return cleaned[-1] if cleaned else ""
 
 
+def reverse_zone(address):
+    """Returns the /24 reverse zone name for an IPv4 address."""
+    parsed = ipaddress.ip_address(address)
+    if parsed.version != 4:
+        return None
+    octets = str(parsed).split(".")
+    return f"{octets[2]}.{octets[1]}.{octets[0]}.in-addr.arpa"
+
+
+def header(lookup):
+    return (
+        "% This is the BIRD-MCP lab WHOIS server (fictional).\n"
+        f"% Query: {lookup}\n\n"
+    )
+
+
+def render(matches, failed_header):
+    if not matches:
+        return failed_header + "%ERROR:101: no entries found\n"
+    return failed_header + "\n\n".join(obj["raw"] for obj in matches) + "\n\n% No more entries.\n"
+
+
 def answer(query):
     lookup = parse_query(query)
     if not lookup:
         return "%ERROR:101: no entries found\n"
 
+    # Reverse-zone objects are queried by name, e.g. 3.10.10.in-addr.arpa.
+    if lookup.lower().endswith(".arpa"):
+        matches = [obj for obj in OBJECTS if obj.get("domain") == lookup.lower()]
+        return render(matches, header(lookup))
+
     try:
         if "/" in lookup:
             network = ipaddress.ip_network(lookup, strict=False)
-            start, end = int(network.network_address), int(network.broadcast_address)
+            start = int(network.network_address)
+            end = int(network.broadcast_address)
         else:
-            address = int(ipaddress.ip_address(lookup))
-            start = end = address
+            start = end = int(ipaddress.ip_address(lookup))
     except ValueError:
-        return f"%ERROR:101: no entries found\n% Invalid query: {lookup}\n"
+        return (
+            "%ERROR:101: no entries found\n"
+            f"% Invalid query: {lookup}\n"
+        )
 
     # Prefer the object that contains the query; otherwise list the objects
     # inside a queried range (e.g. 10.10.0.0/16).
-    matches = [obj for obj in OBJECTS if obj["start"] <= start and obj["end"] >= end]
+    matches = [
+        obj
+        for obj in OBJECTS
+        if "start" in obj and obj["start"] <= start and obj["end"] >= end
+    ]
     if not matches:
-        matches = [obj for obj in OBJECTS if obj["start"] >= start and obj["end"] <= end]
+        matches = [
+            obj
+            for obj in OBJECTS
+            if "start" in obj and obj["start"] >= start and obj["end"] <= end
+        ]
 
-    header = (
-        "% This is the BIRD-MCP lab WHOIS server (fictional).\n"
-        f"% Query: {lookup}\n\n"
-    )
-    if not matches:
-        return header + "%ERROR:101: no entries found\n"
+    # An address query also shows the domain object for its reverse zone.
+    zone = reverse_zone(start)
+    if zone:
+        matches.extend(
+            obj for obj in OBJECTS if obj.get("domain") == zone
+        )
 
-    return header + "\n\n".join(obj["raw"] for obj in matches) + "\n\n% No more entries.\n"
+    return render(matches, header(lookup))
 
 
 class Handler(socketserver.StreamRequestHandler):

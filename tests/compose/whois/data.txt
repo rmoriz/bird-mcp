@@ -117,3 +117,113 @@ mnt-by:         LAB-MNT
 created:        2026-11-27T00:00:00Z
 last-modified:  2026-11-27T00:00:00Z
 source:         ROPE
+
+domain:         1.10.10.in-addr.arpa
+descr:          Reverse zone for the BIRD-MCP lab AS64512 customer prefix 10.10.1.0/24
+admin-c:        LAB-ROPE
+tech-c:         LAB-ROPE
+zone-c:         LAB-ROPE
+nserver:        dns.lab 10.99.0.53
+mnt-by:         LAB-MNT
+created:        2026-11-27T00:00:00Z
+last-modified:  2026-11-27T00:00:00Z
+source:         ROPE
+
+domain:         2.10.10.in-addr.arpa
+descr:          Reverse zone for the BIRD-MCP lab AS64513 customer prefix 10.10.2.0/24
+admin-c:        LAB-ROPE
+tech-c:         LAB-ROPE
+zone-c:         LAB-ROPE
+nserver:        dns.lab 10.99.0.53
+mnt-by:         LAB-MNT
+created:        2026-11-27T00:00:00Z
+last-modified:  2026-11-27T00:00:00Z
+source:         ROPE
+
+domain:         3.10.10.in-addr.arpa
+descr:          Reverse zone for the BIRD-MCP lab AS64514 customer prefix 10.10.3.0/24
+admin-c:        LAB-ROPE
+tech-c:         LAB-ROPE
+zone-c:         LAB-ROPE
+nserver:        dns.lab 10.99.0.53
+mnt-by:         LAB-MNT
+created:        2026-11-27T00:00:00Z
+last-modified:  2026-11-27T00:00:00Z
+source:         ROPE
+
+domain:         4.10.10.in-addr.arpa
+descr:          Reverse zone for the BIRD-MCP lab AS64515 customer prefix 10.10.4.0/24
+admin-c:        LAB-ROPE
+tech-c:         LAB-ROPE
+zone-c:         LAB-ROPE
+nserver:        dns.lab 10.99.0.53
+mnt-by:         LAB-MNT
+created:        2026-11-27T00:00:00Z
+last-modified:  2026-11-27T00:00:00Z
+source:         ROPE
+
+domain:         5.10.10.in-addr.arpa
+descr:          Reverse zone for the BIRD-MCP lab AS64516 customer prefix 10.10.5.0/24
+admin-c:        LAB-ROPE
+tech-c:         LAB-ROPE
+zone-c:         LAB-ROPE
+nserver:        dns.lab 10.99.0.53
+mnt-by:         LAB-MNT
+created:        2026-11-27T00:00:00Z
+last-modified:  2026-11-27T00:00:00Z
+source:         ROPE
+
+domain:         12.0.10.in-addr.arpa
+descr:          Reverse zone for the BIRD-MCP lab eBGP link r1 - r2, 10.0.12.0/29
+admin-c:        LAB-ROPE
+tech-c:         LAB-ROPE
+zone-c:         LAB-ROPE
+nserver:        dns.lab 10.99.0.53
+mnt-by:         LAB-MNT
+created:        2026-11-27T00:00:00Z
+last-modified:  2026-11-27T00:00:00Z
+source:         ROPE
+
+domain:         23.0.10.in-addr.arpa
+descr:          Reverse zone for the BIRD-MCP lab eBGP link r2 - r3, 10.0.23.0/29
+admin-c:        LAB-ROPE
+tech-c:         LAB-ROPE
+zone-c:         LAB-ROPE
+nserver:        dns.lab 10.99.0.53
+mnt-by:         LAB-MNT
+created:        2026-11-27T00:00:00Z
+last-modified:  2026-11-27T00:00:00Z
+source:         ROPE
+
+domain:         34.0.10.in-addr.arpa
+descr:          Reverse zone for the BIRD-MCP lab eBGP link r3 - r4, 10.0.34.0/29
+admin-c:        LAB-ROPE
+tech-c:         LAB-ROPE
+zone-c:         LAB-ROPE
+nserver:        dns.lab 10.99.0.53
+mnt-by:         LAB-MNT
+created:        2026-11-27T00:00:00Z
+last-modified:  2026-11-27T00:00:00Z
+source:         ROPE
+
+domain:         45.0.10.in-addr.arpa
+descr:          Reverse zone for the BIRD-MCP lab eBGP link r4 - r5, 10.0.45.0/29
+admin-c:        LAB-ROPE
+tech-c:         LAB-ROPE
+zone-c:         LAB-ROPE
+nserver:        dns.lab 10.99.0.53
+mnt-by:         LAB-MNT
+created:        2026-11-27T00:00:00Z
+last-modified:  2026-11-27T00:00:00Z
+source:         ROPE
+
+domain:         51.0.10.in-addr.arpa
+descr:          Reverse zone for the BIRD-MCP lab eBGP link r5 - r1, 10.0.51.0/29
+admin-c:        LAB-ROPE
+tech-c:         LAB-ROPE
+zone-c:         LAB-ROPE
+nserver:        dns.lab 10.99.0.53
+mnt-by:         LAB-MNT
+created:        2026-11-27T00:00:00Z
+last-modified:  2026-11-27T00:00:00Z
+source:         ROPE
