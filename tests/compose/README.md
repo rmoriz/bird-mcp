@@ -16,6 +16,23 @@ over eBGP and installs BGP routes in its kernel, so pings and HTTP between hosts
 really traverse the ring. `sim` sits behind r1 and continuously shows the
 reachability matrix plus a short iperf3 sample.
 
+## MCP wiring
+
+One MCP server (`bird`) exposes all five routers through the `router` argument.
+Every router is write-enabled and already includes the file that
+`bird_routes_edit` manages, so add/remove/blackhole works on any of them:
+
+| MCP router | AS | BIRD include | routes_file seen by the agent |
+| --- | --- | --- | --- |
+| `r1` | 64512 | `/etc/bird/state/bird-mcp.conf` | `/state/r1/bird-mcp.conf` |
+| `r2` | 64513 | `/etc/bird/state/bird-mcp.conf` | `/state/r2/bird-mcp.conf` |
+| `r3` | 64514 | `/etc/bird/state/bird-mcp.conf` | `/state/r3/bird-mcp.conf` |
+| `r4` | 64515 | `/etc/bird/state/bird-mcp.conf` | `/state/r4/bird-mcp.conf` |
+| `r5` | 64516 | `/etc/bird/state/bird-mcp.conf` | `/state/r5/bird-mcp.conf` |
+
+Verified by adding a route through the MCP server on each of the five routers
+and removing it again; `opencode mcp list` shows `✓ bird connected`.
+
 ## Prerequisites
 
 - Docker with Compose v2.
