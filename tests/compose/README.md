@@ -113,10 +113,13 @@ BGP routes over eBGP and installs BGP routes in the kernel, so traffic really
 traverses the ring. Hosts are `10.10.N.3` behind router N; `sim` is
 `10.10.1.4` behind r1.
 
-### Lab hostnames
+### Lab hostnames and DNS
 
-Every router, host and the traffic generator resolves the others by name. The
-names are injected with Compose `extra_hosts`, so no DNS service is needed:
+Every router, host and the traffic generator resolves the others by name, and
+reverse lookups work. A small dnsmasq service (`dns.lab`, `10.99.0.53`) serves
+the lab zone and the PTR records; all containers use it and forward everything
+else to the public resolvers. The same names are also in `/etc/hosts` as a
+fallback:
 
 | Name | Address |
 | --- | --- |
@@ -133,13 +136,17 @@ names are injected with Compose `extra_hosts`, so no DNS service is needed:
 ```sh
 docker compose exec h1 ping -c1 gw.as64515.lab
 docker compose exec h1 traceroute gw.as64516.lab
-docker compose exec h1 getent hosts host.as64514.lab
-docker compose exec r2 getent hosts r3-link23.lab
+docker compose exec h1 dig +short host.as64514.lab
+docker compose exec h1 dig -x 10.10.3.2 +short      # gw.as64514.lab
+docker compose exec opencode dig -x 10.10.1.2 +short # gw.as64512.lab
 ```
 
-The OpenCode container is not attached to the lab networks, so it resolves only
-Compose service names and `whois.lab` — use the control sockets or `bird_fleet`
-for the routers.
+Within each AS subnet, `.1` is Docker's bridge gateway; the BIRD router is
+`.2` (`gw.as645NN.lab`).
+
+The OpenCode container resolves the lab names through the DNS service, but it
+has no route into the 10.10.0.0/16 prefixes. Use the control sockets or
+`bird_fleet` to talk to the routers.
 
 ### MCP wiring
 
