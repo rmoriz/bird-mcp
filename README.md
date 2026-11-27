@@ -347,4 +347,4 @@ MIT
 
 ---
 
-*If you like this AI generated slop, consider sponsoring me a RIPE ASN and IPv6 PI? 🥺👉👈*
+*If you enjoy this AI-generated slop, consider sponsoring me a RIPE ASN and some IPv6 PI space? 🥺👉👈*
