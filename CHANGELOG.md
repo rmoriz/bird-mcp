@@ -17,8 +17,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - `AGENTS.md` for coding agents and an AI usage section in the README.
 - GitHub Actions CI (format, clippy, tests) and a release workflow that builds
   native binaries for macOS arm64/Intel and Linux arm64/x86_64 on every push to
-  `main`, published as a rolling `latest` pre-release. Pushing a `v*` tag creates
-  a fixed release with generated notes.
+  `main`. The rolling `latest` release is a regular release with stable asset
+  names, so the `/releases/latest/download/...` links always work; `v*` tags
+  create fixed releases with generated notes.
 
 ### Fixed
 - Retry `exec` on `ETXTBSY`, which Linux returns when a just-written script is

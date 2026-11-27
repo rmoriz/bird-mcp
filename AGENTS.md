@@ -28,8 +28,8 @@ cargo run -- --check            # validate router configuration
 
 CI (`.github/workflows/ci.yml`) runs fmt, clippy and tests on every push/PR.
 The release workflow (`.github/workflows/release.yml`) builds macOS arm64/Intel
-and Linux arm64/x86_64 on every push to `main` and republishes the rolling
-`latest` pre-release; `v*` tags create fixed releases.
+and Linux arm64/x86_64 on every push to `main` and refreshes the rolling
+`latest` release with stable asset names; `v*` tags create fixed releases.
 
 ## Layout
 

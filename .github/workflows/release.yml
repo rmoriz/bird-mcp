@@ -49,12 +49,8 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          if [ "${GITHUB_REF_TYPE}" = "tag" ]; then
-            version="${GITHUB_REF_NAME}"
-          else
-            version="$(git rev-parse --short HEAD)"
-          fi
-          name="bird-mcp-${version}-${{ matrix.target }}"
+          # Stable asset names keep the /releases/latest/download/<name> URLs valid.
+          name="bird-mcp-${{ matrix.target }}"
           mkdir -p "staging/${name}" dist
           cp "target/${{ matrix.target }}/release/bird-mcp" "staging/${name}/"
           cp README.md LICENSE CHANGELOG.md "staging/${name}/"
@@ -107,12 +103,13 @@ jobs:
             exit 0
           fi
 
-          # Every push to main refreshes one rolling pre-release whose tag
-          # follows the branch.
+          # Every push to main refreshes one rolling release whose tag follows
+          # the branch. It is a regular release (not a pre-release) so GitHub
+          # shows it in the repository sidebar and on /releases with its assets.
           tag="latest"
           short="$(git rev-parse --short "$GITHUB_SHA")"
           title="Latest build (${short})"
-          notes="Rolling build of \`main\` at ${GITHUB_SHA}. Rebuilt on every push to main; this tag moves with it. For stable versions use a \`v*\` tag."
+          notes="Rolling build of \`main\` at ${GITHUB_SHA}. Rebuilt on every push to main; this tag and release move with it. For fixed versions use a \`v*\` tag."
 
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
@@ -126,11 +123,11 @@ jobs:
               while IFS= read -r asset; do
                 [ -n "$asset" ] && gh release delete-asset "$tag" "$asset" --yes
               done
-            gh release edit "$tag" --title "$title" --notes "$notes" --prerelease
+            gh release edit "$tag" --title "$title" --notes "$notes" --latest
             gh release upload "$tag" dist/* --clobber
           else
             gh release create "$tag" dist/* \
               --title "$title" \
               --notes "$notes" \
-              --prerelease
+              --latest
           fi

@@ -41,16 +41,23 @@ CLI text). Parsed responses keep the unparsed output when you pass `raw: true`.
 
 ## Install
 
-Prebuilt binaries are on the [releases page](https://github.com/rmoriz/bird-mcp/releases):
-macOS (Apple Silicon and Intel) and Linux (arm64 and x86_64), each as a `.tar.gz`
-with the binary, README, LICENSE and changelog.
+Prebuilt binaries are attached to every release. `latest` is rebuilt on each
+push to `main`, so these links always point at the current build:
 
-`latest` is a rolling pre-release rebuilt on every push to `main`; tags such as
-`v0.1.0` are fixed releases.
+| Platform | Download |
+| --- | --- |
+| macOS, Apple Silicon | [bird-mcp-aarch64-apple-darwin.tar.gz](https://github.com/rmoriz/bird-mcp/releases/latest/download/bird-mcp-aarch64-apple-darwin.tar.gz) |
+| macOS, Intel | [bird-mcp-x86_64-apple-darwin.tar.gz](https://github.com/rmoriz/bird-mcp/releases/latest/download/bird-mcp-x86_64-apple-darwin.tar.gz) |
+| Linux, arm64 | [bird-mcp-aarch64-unknown-linux-gnu.tar.gz](https://github.com/rmoriz/bird-mcp/releases/latest/download/bird-mcp-aarch64-unknown-linux-gnu.tar.gz) |
+| Linux, x86_64 | [bird-mcp-x86_64-unknown-linux-gnu.tar.gz](https://github.com/rmoriz/bird-mcp/releases/latest/download/bird-mcp-x86_64-unknown-linux-gnu.tar.gz) |
+| Checksums | [SHA256SUMS](https://github.com/rmoriz/bird-mcp/releases/latest/download/SHA256SUMS) |
+
+Each archive contains the binary, README, LICENSE and changelog. Fixed versions
+are published from `v*` tags on the [releases page](https://github.com/rmoriz/bird-mcp/releases).
 
 ```sh
-tar -xzf bird-mcp-*-aarch64-apple-darwin.tar.gz
-sudo install bird-mcp-*/bird-mcp /usr/local/bin/
+tar -xzf bird-mcp-aarch64-apple-darwin.tar.gz
+sudo install bird-mcp-aarch64-apple-darwin/bird-mcp /usr/local/bin/
 ```
 
 ### Build from source
