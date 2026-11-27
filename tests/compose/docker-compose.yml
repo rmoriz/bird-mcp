@@ -229,6 +229,9 @@ services:
       ANTHROPIC_API_KEY: ${ANTHROPIC_API_KEY:-}
       OPENAI_API_KEY: ${OPENAI_API_KEY:-}
       OPENROUTER_API_KEY: ${OPENROUTER_API_KEY:-}
+      # OpenCode Go: either export the key or use ./import-host-login.sh
+      OPENCODE_API_KEY: ${OPENCODE_API_KEY:-}
+      OPENCODE_GO_API_KEY: ${OPENCODE_GO_API_KEY:-}
     volumes:
       - ctl_r1:/run/bird/r1
       - ctl_r2:/run/bird/r2
@@ -241,7 +244,9 @@ services:
       - ./agent/routers.toml:/opt/bird-mcp/routers.toml:ro
       - ./agent/opencode.json:/root/.config/opencode/opencode.json:ro
       - ./agent/AGENTS.md:/workspace/AGENTS.md:ro
-      - opencode_auth:/root/.local/share/opencode
+      # Default: named volume. Set OPENCODE_DATA_DIR=$HOME/.local/share/opencode
+      # to reuse the host login directly (do not run host and container together).
+      - ${OPENCODE_DATA_DIR:-opencode_auth}:/root/.local/share/opencode
 
 networks:
   link12:
