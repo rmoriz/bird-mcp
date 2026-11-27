@@ -1,0 +1,26 @@
+BIRD 3.4.0 ready.
+lo up (index=1)
+	MultiAccess AdminUp LinkUp Loopback Ignored MTU=65536
+	127.0.0.1/8 (Preferred, scope host)
+	::1/128 (Preferred, scope host)
+tunl0 down (index=2)
+	MultiAccess AdminDown LinkDown MTU=1480
+gre0 down (index=3)
+	MultiAccess AdminDown LinkDown MTU=1476
+gretap0 down (index=4)
+	MultiAccess Broadcast Multicast AdminDown LinkDown MTU=1462
+erspan0 down (index=5)
+	MultiAccess Broadcast Multicast AdminDown LinkDown MTU=1450
+ip_vti0 down (index=6)
+	MultiAccess AdminDown LinkDown MTU=1480
+ip6_vti0 down (index=7)
+	MultiAccess AdminDown LinkDown MTU=1428
+sit0 down (index=8)
+	MultiAccess AdminDown LinkDown MTU=1480
+ip6tnl0 down (index=9)
+	MultiAccess AdminDown LinkDown MTU=1452
+ip6gre0 down (index=10)
+	MultiAccess AdminDown LinkDown MTU=1448
+eth0 up (index=11)
+	MultiAccess Broadcast Multicast AdminUp LinkUp MTU=1500
+	172.30.0.11/24 (Preferred, scope site)

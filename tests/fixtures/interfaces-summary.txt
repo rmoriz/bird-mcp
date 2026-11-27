@@ -1,0 +1,13 @@
+BIRD 3.4.0 ready.
+Interface  State  IPv4 address       IPv6 address
+lo         up     127.0.0.1/8        ::1/128
+tunl0      down                      
+gre0       down                      
+gretap0    down                      
+erspan0    down                      
+ip_vti0    down                      
+ip6_vti0   down                      
+sit0       down                      
+ip6tnl0    down                      
+ip6gre0    down                      
+eth0       up     172.30.0.11/24     

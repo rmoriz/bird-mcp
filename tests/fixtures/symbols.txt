@@ -1,0 +1,40 @@
+BIRD 3.4.0 ready.
+ips_site	constant
+ipt_unspec	constant
+ipp_xorp	constant
+ipp_dhcp	constant
+ipp_bird	constant
+peer2   	protocol
+master4 	routing table
+worker  	unknown type
+master6 	routing table
+ipp_boot	constant
+ipt_main	constant
+ips_link	constant
+ipp_isis	constant
+ips_global	constant
+static4 	protocol
+ipp_kernel	constant
+ips_host	constant
+ips_nowhere	constant
+ipp_dnrouted	constant
+ipp_ntk 	constant
+ipp_mrt 	constant
+ipr_cosmos	constant
+ipp_babel	constant
+ipp_redirect	constant
+ipp_keepalived	constant
+ipt_local	constant
+express 	unknown type
+ipp_bgp 	constant
+ipp_zebra	constant
+ipp_gated	constant
+ipp_openr	constant
+ipp_eigrp	constant
+ipp_rip 	constant
+device1 	protocol
+ipt_default	constant
+ipp_static	constant
+ipp_ra  	constant
+ipp_ospf	constant
+ipp_unspec	constant

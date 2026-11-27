@@ -1,0 +1,3 @@
+BIRD 3.4.0 ready.
+Reading configuration from /etc/bird/bad.conf
+/etc/bird/bad.conf:3:3 syntax error, unexpected CF_SYM_UNDEFINED

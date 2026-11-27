@@ -1,0 +1,8 @@
+BIRD 3.4.0 ready.
+BIRD 3.4.0
+Router ID is 10.255.0.1
+Hostname is a7d4ad46a6b5
+Current server time is 2026-11-27 13:47:27.441
+Last reboot on 2026-11-27 13:47:08.501
+Last reconfiguration on 2026-11-27 13:47:08.501
+Daemon is up and running

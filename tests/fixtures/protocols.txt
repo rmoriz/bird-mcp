@@ -1,0 +1,5 @@
+BIRD 3.4.0 ready.
+Name       Proto      Table      State  Since         Info
+device1    Device     ---        up     13:48:27.815  
+static4    Static     master4    up     13:48:27.815  
+peer2      BGP        ---        up     13:48:32.615  Established   

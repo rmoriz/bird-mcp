@@ -1,0 +1,6 @@
+/target
+# Upstream BIRD checkout used as documentation source. Not part of this crate.
+/bird
+.DS_Store
+*.swp
+.env

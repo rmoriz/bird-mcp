@@ -1,0 +1,2 @@
+BIRD 3.4.0 ready.
+No such command. Press `?' for help.

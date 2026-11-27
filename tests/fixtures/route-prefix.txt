@@ -1,0 +1,5 @@
+BIRD 3.4.0 ready.
+Table master4:
+192.0.2.0/24         blackhole [static4 13:48:27.815] * (200)
+                     unicast [static4 13:48:27.815] (200)
+	via 172.30.0.1 on eth0

@@ -1,0 +1,48 @@
+BIRD 3.4.0 ready.
+Name       Proto      Table      State  Since         Info
+peer2      BGP        ---        up     13:48:32.615  Established   
+  Created:            13:48:27.815
+  BGP state:          Established
+    Neighbor address: 172.30.0.12
+    Neighbor AS:      64513
+    Local AS:         64512
+    Neighbor ID:      10.255.0.2
+    Local capabilities
+      Multiprotocol
+        AF announced: ipv4
+      Route refresh
+      Graceful restart
+      4-octet AS numbers
+      Enhanced refresh
+      Long-lived graceful restart
+    Neighbor capabilities
+      Multiprotocol
+        AF announced: ipv4
+      Route refresh
+      Graceful restart
+      4-octet AS numbers
+      Enhanced refresh
+      Long-lived graceful restart
+    Session:          external AS4
+    Source address:   172.30.0.11
+    Hold timer:       190.516/240
+    Keepalive timer:  39.371/80
+    TX pending:       0 bytes
+    Send hold timer:  452.363/480
+  Channel ipv4
+    State:          UP
+    Import state:   UP
+    Export state:   READY
+    Table:          master4
+    Preference:     100
+    Input filter:   ACCEPT
+    Output filter:  ACCEPT
+    Routes:         1 imported, 3 exported, 0 preferred
+    Route change stats:     received   rejected   filtered    ignored   RX limit      limit   accepted
+      Import updates:              1          0          0          0          0          0          1
+      Import withdraws:            0          0        ---          0        ---        ---          0
+      Export updates:              3          0          0          0        ---          0          3
+      Export withdraws:            0        ---        ---          0        ---        ---          0
+    BGP Next hop:   172.30.0.11
+    Pending 0 attribute sets with total 0 prefixes to send
+

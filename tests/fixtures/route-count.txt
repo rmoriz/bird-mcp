@@ -1,0 +1,4 @@
+BIRD 3.4.0 ready.
+5 of 5 routes for 3 networks in table master4
+0 of 0 routes for 0 networks in table master6
+Total: 5 of 5 routes for 3 networks in 2 tables
