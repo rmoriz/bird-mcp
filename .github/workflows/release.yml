@@ -117,13 +117,12 @@ jobs:
           git push --force origin "refs/tags/$tag"
 
           if gh release view "$tag" >/dev/null 2>&1; then
-            # Replace the asset set: names carry the commit, so old files would
-            # otherwise pile up in the rolling release.
+            # Replace the asset set so removed or renamed files do not linger.
             gh release view "$tag" --json assets --jq '.assets[].name' |
               while IFS= read -r asset; do
                 [ -n "$asset" ] && gh release delete-asset "$tag" "$asset" --yes
               done
-            gh release edit "$tag" --title "$title" --notes "$notes" --latest
+            gh release edit "$tag" --title "$title" --notes "$notes" --prerelease=false --latest
             gh release upload "$tag" dist/* --clobber
           else
             gh release create "$tag" dist/* \
