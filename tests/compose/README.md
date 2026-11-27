@@ -18,6 +18,13 @@ docker compose exec -it opencode opencode
 `AGENTS.md` describing the lab; the MCP server is called `bird` and its tools
 take `router: "r1"` … `"r5"`.
 
+Credentials (including OpenCode Go) live in `/root/.local/share/opencode` inside
+the container, which is the named volume `opencode_auth`. OpenCode v2 stores
+them in the SQLite database `opencode.db` (table `credential`; legacy
+`auth.json` from v1 is imported on first start), so they survive container
+recreation. `docker compose down` keeps the volume; `docker compose down -v`
+deletes it.
+
 ## What to try in OpenCode
 
 Just ask in natural language; the agent picks the MCP tools.
@@ -101,7 +108,8 @@ docker compose exec h1 curl -s http://10.10.5.3/
 ## Stop
 
 ```sh
-docker compose down -v
+docker compose down          # keeps the opencode_auth volume with your logins
+# docker compose down -v    # also deletes OpenCode credentials and socket volumes
 rm -rf state
 ```
 
