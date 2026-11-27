@@ -205,7 +205,7 @@ services:
       as1:
         ipv4_address: 10.10.1.4
 
-  # Static RIPE-style inetnum data for the lab networks. Reachable as `whois`
+  # Static fake ROPE-style inetnum data for the lab networks. Reachable as `whois`
   # on the compose network and as localhost:${WHOIS_PORT:-4343} from the host.
   whois:
     build: ./whois

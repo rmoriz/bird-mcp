@@ -78,7 +78,7 @@ def answer(query):
         matches = [obj for obj in OBJECTS if obj["start"] >= start and obj["end"] <= end]
 
     header = (
-        "% This is the BIRD-MCP lab WHOIS server (static RIPE-style data).\n"
+        "% This is the BIRD-MCP lab WHOIS server (fake ROPE-style data).\n"
         f"% Query: {lookup}\n\n"
     )
     if not matches:

@@ -121,7 +121,7 @@ Add and remove were exercised on each of the five routers.
 
 ## WHOIS data
 
-A small RIPE-style WHOIS server runs as the compose service `whois` with the
+A small fake ROPE-style WHOIS server runs as the compose service `whois` with the
 hostname `whois.lab`. It serves
 static `inetnum` objects for the five customer prefixes and the five eBGP links
 from `whois/data.txt` — port 43 on the lab network, `localhost:4343` on the
@@ -146,7 +146,7 @@ descr:          BIRD-MCP lab customer prefix for AS64514
 country:        DE
 status:         ASSIGNED PA
 ...
-source:         RIPE
+source:         ROPE
 ```
 
 Querying an address without an object returns `%ERROR:101: no entries found`.
