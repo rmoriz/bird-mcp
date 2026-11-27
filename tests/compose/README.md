@@ -121,7 +121,7 @@ Add and remove were exercised on each of the five routers.
 
 ## WHOIS data
 
-A small fake ROPE-style WHOIS server runs as the compose service `whois` with the
+A small fictional ROPE-style WHOIS server runs as the compose service `whois` with the
 hostname `whois.lab`. It serves
 static `inetnum` objects for the five customer prefixes and the five eBGP links
 from `whois/data.txt` — port 43 on the lab network, `localhost:4343` on the

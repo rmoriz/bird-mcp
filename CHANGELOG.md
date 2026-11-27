@@ -8,7 +8,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Added
-- The compose lab runs a small ROPE-style (deliberately fake) WHOIS server with static `inetnum`
+- The compose lab runs a small fictional ROPE-style WHOIS server with static `inetnum`
   objects for the five customer prefixes and eBGP links (`whois/data.txt`,
   reachable as `whois` inside the lab and `localhost:4343` on the host).
 - `bird_fleet` runs a read-only check (status, protocols, routes, interfaces) on
