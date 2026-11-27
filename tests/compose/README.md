@@ -51,6 +51,16 @@ should list OpenCode Go. Option 3 shares the SQLite database with the host: do
 not run host OpenCode and the container at the same time, and expect the
 (large) database to be accessed through the mount.
 
+### Container tooling
+
+Besides `birdc`, `bird-mcp` and `opencode`, the agent image carries a network
+toolbox: `mtr`, `traceroute`, `tracepath`, `ping`, `fping`, `arping`, `dig`,
+`nc`, `socat`, `tcpdump`, `iperf3`, `ethtool` and `whois`.
+
+`tcpdump` only sees the opencode container's own interfaces (the compose
+default network). To capture a lab link, run it inside the host or router
+network, for example `docker compose exec h1 tcpdump -i eth0 -nn`.
+
 ## What to try in OpenCode
 
 Just ask in natural language; the agent picks the MCP tools.
