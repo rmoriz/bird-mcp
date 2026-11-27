@@ -43,6 +43,7 @@ and Linux arm64/x86_64 on every push to `main` and refreshes the rolling
 | `src/server.rs` | MCP tool definitions (`#[tool_router]`), argument validation |
 | `tests/fixtures/` | Real BIRD 3.4.0 output used by parser tests |
 | `tests/docker/` | Reproducible two-router BIRD lab (not used by CI) |
+| `tests/compose/` | Five-AS manual lab: routers, hosts, traffic, OpenCode container |
 | `tests/mcp.rs` | End-to-end MCP stdio test with a fake `birdc` |
 | `tests/live_docker.rs` | Ignored test against the real lab, including writes |
 

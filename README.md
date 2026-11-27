@@ -279,6 +279,24 @@ to the running lab, including the write path:
 cargo test --test live_docker -- --ignored
 ```
 
+### Five-AS lab with OpenCode
+
+`tests/compose/` is a manual test environment: five BIRD routers (one per AS) in
+a ring, a customer host per AS, a traffic generator (ping, HTTP, iperf3) and a
+Debian container running OpenCode with `bird-mcp` configured against all five
+routers. It needs the `bird/` checkout and Docker Compose:
+
+```sh
+cd tests/compose
+docker compose up -d --build
+docker compose logs -f sim
+docker compose exec -it opencode opencode
+```
+
+See `tests/compose/README.md` for the topology, the blackhole exercise and the
+caveats. Nothing in this lab is production-safe: every router is write-enabled
+and the agent container shares the control sockets.
+
 ## Security notes
 
 - Access to the BIRD control socket is equivalent to full BIRD control. If the

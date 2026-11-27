@@ -1,0 +1,50 @@
+# bird-mcp configuration for the five-router lab.
+# Every router is reachable through a shared control socket volume; the agent
+# container has birdc and writes the managed route files into /state.
+
+docs_dir = "/opt/bird/doc"
+
+[[routers]]
+name = "r1"
+transport = "local"
+birdc = "birdc"
+socket = "/run/bird/r1/bird.ctl"
+config_file = "/configs/r1.conf"
+routes_file = "/state/r1/bird-mcp.conf"
+read_only = false
+
+[[routers]]
+name = "r2"
+transport = "local"
+birdc = "birdc"
+socket = "/run/bird/r2/bird.ctl"
+config_file = "/configs/r2.conf"
+routes_file = "/state/r2/bird-mcp.conf"
+read_only = false
+
+[[routers]]
+name = "r3"
+transport = "local"
+birdc = "birdc"
+socket = "/run/bird/r3/bird.ctl"
+config_file = "/configs/r3.conf"
+routes_file = "/state/r3/bird-mcp.conf"
+read_only = false
+
+[[routers]]
+name = "r4"
+transport = "local"
+birdc = "birdc"
+socket = "/run/bird/r4/bird.ctl"
+config_file = "/configs/r4.conf"
+routes_file = "/state/r4/bird-mcp.conf"
+read_only = false
+
+[[routers]]
+name = "r5"
+transport = "local"
+birdc = "birdc"
+socket = "/run/bird/r5/bird.ctl"
+config_file = "/configs/r5.conf"
+routes_file = "/state/r5/bird-mcp.conf"
+read_only = false

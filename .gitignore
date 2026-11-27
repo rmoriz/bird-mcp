@@ -5,3 +5,4 @@
 *.swp
 .env
 tests/docker/state/
+tests/compose/state/

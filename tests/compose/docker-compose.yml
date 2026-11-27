@@ -1,0 +1,294 @@
+name: bird-mcp-lab
+
+x-bird: &bird
+  image: bird-mcp-lab-bird:3.4.0
+  entrypoint: ["/bin/sh", "-c"]
+  build:
+    context: ../..
+    dockerfile: tests/compose/bird.Dockerfile
+  cap_add:
+    - NET_ADMIN
+  sysctls:
+    net.ipv4.ip_forward: 1
+  depends_on:
+    init:
+      condition: service_completed_successfully
+  restart: unless-stopped
+
+x-tools: &tools
+  image: bird-mcp-lab-tools:latest
+  build: ./tools
+  cap_add:
+    - NET_ADMIN
+  restart: unless-stopped
+
+services:
+  # Creates the writable include files the routers and the agent share.
+  init:
+    image: alpine:3.20
+    container_name: birdlab-init
+    volumes:
+      - ./state:/state
+    command:
+      - sh
+      - -c
+      - |
+        for i in 1 2 3 4 5; do
+          mkdir -p /state/r$$i
+          [ -f /state/r$$i/bird-mcp.conf ] || : > /state/r$$i/bird-mcp.conf
+        done
+
+  # Five routers, one per AS. Ring topology:
+  #   r1 - r2 - r3 - r4 - r5 - r1
+  r1:
+    <<: *bird
+    container_name: birdlab-r1
+    hostname: r1
+    command: ["ip route del default 2>/dev/null; exec bird -f -c /etc/bird/r1.conf -s /run/bird/bird.ctl"]
+    volumes:
+      - ./configs/r1.conf:/etc/bird/r1.conf:ro
+      - ./state/r1:/etc/bird/state
+      - ctl_r1:/run/bird
+    networks:
+      link12:
+        ipv4_address: 10.0.12.2
+      link51:
+        ipv4_address: 10.0.51.3
+      as1:
+        ipv4_address: 10.10.1.2
+
+  r2:
+    <<: *bird
+    container_name: birdlab-r2
+    hostname: r2
+    command: ["ip route del default 2>/dev/null; exec bird -f -c /etc/bird/r2.conf -s /run/bird/bird.ctl"]
+    volumes:
+      - ./configs/r2.conf:/etc/bird/r2.conf:ro
+      - ./state/r2:/etc/bird/state
+      - ctl_r2:/run/bird
+    networks:
+      link12:
+        ipv4_address: 10.0.12.3
+      link23:
+        ipv4_address: 10.0.23.2
+      as2:
+        ipv4_address: 10.10.2.2
+
+  r3:
+    <<: *bird
+    container_name: birdlab-r3
+    hostname: r3
+    command: ["ip route del default 2>/dev/null; exec bird -f -c /etc/bird/r3.conf -s /run/bird/bird.ctl"]
+    volumes:
+      - ./configs/r3.conf:/etc/bird/r3.conf:ro
+      - ./state/r3:/etc/bird/state
+      - ctl_r3:/run/bird
+    networks:
+      link23:
+        ipv4_address: 10.0.23.3
+      link34:
+        ipv4_address: 10.0.34.2
+      as3:
+        ipv4_address: 10.10.3.2
+
+  r4:
+    <<: *bird
+    container_name: birdlab-r4
+    hostname: r4
+    command: ["ip route del default 2>/dev/null; exec bird -f -c /etc/bird/r4.conf -s /run/bird/bird.ctl"]
+    volumes:
+      - ./configs/r4.conf:/etc/bird/r4.conf:ro
+      - ./state/r4:/etc/bird/state
+      - ctl_r4:/run/bird
+    networks:
+      link34:
+        ipv4_address: 10.0.34.3
+      link45:
+        ipv4_address: 10.0.45.2
+      as4:
+        ipv4_address: 10.10.4.2
+
+  r5:
+    <<: *bird
+    container_name: birdlab-r5
+    hostname: r5
+    command: ["ip route del default 2>/dev/null; exec bird -f -c /etc/bird/r5.conf -s /run/bird/bird.ctl"]
+    volumes:
+      - ./configs/r5.conf:/etc/bird/r5.conf:ro
+      - ./state/r5:/etc/bird/state
+      - ctl_r5:/run/bird
+    networks:
+      link45:
+        ipv4_address: 10.0.45.3
+      link51:
+        ipv4_address: 10.0.51.2
+      as5:
+        ipv4_address: 10.10.5.2
+
+  # One customer host per AS: HTTP server, iperf3 server, default route via rN.
+  h1:
+    <<: *tools
+    container_name: birdlab-h1
+    hostname: h1
+    command: ["/bin/sh", "/host-entrypoint.sh"]
+    environment:
+      GATEWAY: 10.10.1.2
+    volumes:
+      - ./tools/host-entrypoint.sh:/host-entrypoint.sh:ro
+    networks:
+      as1:
+        ipv4_address: 10.10.1.3
+
+  h2:
+    <<: *tools
+    container_name: birdlab-h2
+    hostname: h2
+    command: ["/bin/sh", "/host-entrypoint.sh"]
+    environment:
+      GATEWAY: 10.10.2.2
+    volumes:
+      - ./tools/host-entrypoint.sh:/host-entrypoint.sh:ro
+    networks:
+      as2:
+        ipv4_address: 10.10.2.3
+
+  h3:
+    <<: *tools
+    container_name: birdlab-h3
+    hostname: h3
+    command: ["/bin/sh", "/host-entrypoint.sh"]
+    environment:
+      GATEWAY: 10.10.3.2
+    volumes:
+      - ./tools/host-entrypoint.sh:/host-entrypoint.sh:ro
+    networks:
+      as3:
+        ipv4_address: 10.10.3.3
+
+  h4:
+    <<: *tools
+    container_name: birdlab-h4
+    hostname: h4
+    command: ["/bin/sh", "/host-entrypoint.sh"]
+    environment:
+      GATEWAY: 10.10.4.2
+    volumes:
+      - ./tools/host-entrypoint.sh:/host-entrypoint.sh:ro
+    networks:
+      as4:
+        ipv4_address: 10.10.4.3
+
+  h5:
+    <<: *tools
+    container_name: birdlab-h5
+    hostname: h5
+    command: ["/bin/sh", "/host-entrypoint.sh"]
+    environment:
+      GATEWAY: 10.10.5.2
+    volumes:
+      - ./tools/host-entrypoint.sh:/host-entrypoint.sh:ro
+    networks:
+      as5:
+        ipv4_address: 10.10.5.3
+
+  # Continuous traffic: ping + HTTP + periodic iperf3, one line per target.
+  sim:
+    <<: *tools
+    container_name: birdlab-sim
+    hostname: sim
+    command: ["/bin/sh", "/traffic.sh"]
+    environment:
+      GATEWAY: 10.10.1.2
+    volumes:
+      - ./tools/traffic.sh:/traffic.sh:ro
+    networks:
+      as1:
+        ipv4_address: 10.10.1.4
+
+  # Debian image with birdc, bird-mcp and OpenCode, configured with the lab's
+  # five routers as one MCP server.
+  opencode:
+    image: bird-mcp-lab-agent:latest
+    build:
+      context: ../..
+      dockerfile: tests/compose/agent/Dockerfile
+    container_name: birdlab-opencode
+    hostname: opencode
+    stdin_open: true
+    tty: true
+    depends_on:
+      - init
+      - r1
+      - r2
+      - r3
+      - r4
+      - r5
+    working_dir: /workspace
+    environment:
+      BIRD_MCP_CONFIG: /opt/bird-mcp/routers.toml
+      ANTHROPIC_API_KEY: ${ANTHROPIC_API_KEY:-}
+      OPENAI_API_KEY: ${OPENAI_API_KEY:-}
+      OPENROUTER_API_KEY: ${OPENROUTER_API_KEY:-}
+    volumes:
+      - ctl_r1:/run/bird/r1
+      - ctl_r2:/run/bird/r2
+      - ctl_r3:/run/bird/r3
+      - ctl_r4:/run/bird/r4
+      - ctl_r5:/run/bird/r5
+      - ./state:/state
+      - ./configs:/configs:ro
+      - ../../bird/doc:/opt/bird/doc:ro
+      - ./agent/routers.toml:/opt/bird-mcp/routers.toml:ro
+      - ./agent/opencode.json:/root/.config/opencode/opencode.json:ro
+      - ./agent/AGENTS.md:/workspace/AGENTS.md:ro
+      - opencode_auth:/root/.local/share/opencode
+
+networks:
+  link12:
+    ipam:
+      config:
+        - subnet: 10.0.12.0/29
+  link23:
+    ipam:
+      config:
+        - subnet: 10.0.23.0/29
+  link34:
+    ipam:
+      config:
+        - subnet: 10.0.34.0/29
+  link45:
+    ipam:
+      config:
+        - subnet: 10.0.45.0/29
+  link51:
+    ipam:
+      config:
+        - subnet: 10.0.51.0/29
+  as1:
+    ipam:
+      config:
+        - subnet: 10.10.1.0/24
+  as2:
+    ipam:
+      config:
+        - subnet: 10.10.2.0/24
+  as3:
+    ipam:
+      config:
+        - subnet: 10.10.3.0/24
+  as4:
+    ipam:
+      config:
+        - subnet: 10.10.4.0/24
+  as5:
+    ipam:
+      config:
+        - subnet: 10.10.5.0/24
+
+volumes:
+  ctl_r1:
+  ctl_r2:
+  ctl_r3:
+  ctl_r4:
+  ctl_r5:
+  opencode_auth:

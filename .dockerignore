@@ -1,0 +1,7 @@
+.git
+.DS_Store
+.env
+*.swp
+target
+tests/compose/state
+bird/.git

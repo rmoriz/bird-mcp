@@ -8,6 +8,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Added
+- `tests/compose/`: a five-AS manual lab (ring of five BIRD routers with eBGP,
+  one customer host per AS, a traffic generator doing ping, HTTP and iperf3) and
+  a Debian OpenCode container with `bird-mcp` wired to all five routers over
+  shared control sockets.
 - `bird_routes_edit`: add, remove and list static routes (blackhole, unreachable,
   prohibit or via gateway/interface) in a managed include file, with
   `configure check` before apply, automatic restore on failure and `dry_run` /
