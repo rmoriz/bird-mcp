@@ -18,6 +18,11 @@ docker compose exec -it opencode opencode
 `AGENTS.md` describing the lab; the MCP server is called `bird` and its tools
 take `router: "r1"` … `"r5"`.
 
+The default model is `opencode-go/deepseek-v4.1-flash` (set in
+`agent/opencode.json`). Change it with `/models` in the TUI or by editing that
+file and recreating the container. Without a model in the config, OpenCode picks
+its own default (currently a free `hungerg-free` model), not your Go plan.
+
 Credentials (including OpenCode Go) live in `/root/.local/share/opencode` inside
 the container, which is the named volume `opencode_auth`. OpenCode v2 stores
 them in the SQLite database `opencode.db` (table `credential`; legacy

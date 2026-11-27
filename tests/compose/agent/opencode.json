@@ -1,9 +1,12 @@
 {
   "$schema": "https://opencode.ai/config.json",
+  "model": "opencode-go/deepseek-v4.1-flash",
   "mcp": {
     "bird": {
       "type": "local",
-      "command": ["bird-mcp"],
+      "command": [
+        "bird-mcp"
+      ],
       "environment": {
         "BIRD_MCP_CONFIG": "/opt/bird-mcp/routers.toml"
       }
