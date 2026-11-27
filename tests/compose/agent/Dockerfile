@@ -37,6 +37,8 @@ RUN curl -fsSL https://opencode.ai/v2/install | bash -s -- --no-modify-path \
     && opencode --version
 
 RUN mkdir -p /workspace /opt/bird-mcp
+COPY tests/compose/agent/lab-entrypoint.sh /usr/local/bin/lab-entrypoint.sh
+RUN chmod +x /usr/local/bin/lab-entrypoint.sh
 WORKDIR /workspace
 
-ENTRYPOINT ["/usr/bin/tini", "--", "opencode"]
+ENTRYPOINT ["/usr/local/bin/lab-entrypoint.sh"]

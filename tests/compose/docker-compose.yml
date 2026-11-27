@@ -306,18 +306,22 @@ services:
       - r4
       - r5
     working_dir: /workspace
+    cap_add:
+      - NET_ADMIN
     dns:
       - 10.99.0.53
     networks:
       default: {}
       mgmt:
         ipv4_address: 10.99.0.250
+      as1:
+        ipv4_address: 10.10.1.10
     environment:
       BIRD_MCP_CONFIG: /opt/bird-mcp/routers.toml
       ANTHROPIC_API_KEY: ${ANTHROPIC_API_KEY:-}
       OPENAI_API_KEY: ${OPENAI_API_KEY:-}
       OPENROUTER_API_KEY: ${OPENROUTER_API_KEY:-}
-      # OpenCode Go: either export the key or use ./import-host-login.sh
+      # OpenCode Go: either export the key or use ./use-host-login.sh
       OPENCODE_API_KEY: ${OPENCODE_API_KEY:-}
       OPENCODE_GO_API_KEY: ${OPENCODE_GO_API_KEY:-}
     volumes:

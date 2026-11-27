@@ -8,6 +8,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Added
+- The OpenCode container joins `as1` at `10.10.1.10` and routes `10.0.0.0/16`
+  and `10.10.0.0/16` via r1, so ping/traceroute/mtr reach the lab from the
+  agent container.
 - A dnsmasq service (`dns.lab`, `10.99.0.53`) provides forward and reverse DNS
   for the lab zone, including names for the Docker bridge gateways
   (`docker-as1.lab`, `docker-link12.lab`, `docker-mgmt.lab`); all containers use

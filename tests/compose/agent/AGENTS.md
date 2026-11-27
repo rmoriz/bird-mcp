@@ -26,7 +26,9 @@ Every lab container resolves the others by name: `gw.as6451N.lab` for a router,
 `rX-linkYZ.lab` for link addresses (for example `r3-link23.lab`). Short aliases
 `rN.lab` / `hN.lab` exist too, and reverse lookups resolve through the lab DNS
 (`dns.lab`, `10.99.0.53`). Use the names in `ping`, `traceroute` and `mtr`; the
-MCP tools still take router names (`r1` … `r5`).
+MCP tools still take router names (`r1` … `r5`). The agent container itself has
+a route into both lab /16s via r1, so `traceroute gw.as64516.lab` works there
+too.
 
 ## Useful tool calls
 

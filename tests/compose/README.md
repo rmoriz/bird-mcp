@@ -148,9 +148,18 @@ Within each subnet, `.1` is Docker's bridge gateway (`docker-…​.lab`) and `.
 is the BIRD router (`gw.as645NN.lab`). The gateways are the Docker VM, not BIRD;
 naming them keeps traceroute output unambiguous.
 
-The OpenCode container resolves the lab names through the DNS service, but it
-has no route into the 10.10.0.0/16 prefixes. Use the control sockets or
-`bird_fleet` to talk to the routers.
+The OpenCode container is also attached to `as1` (`10.10.1.10`) and routes
+`10.0.0.0/16` and `10.10.0.0/16` via r1, so `ping`, `traceroute` and `mtr`
+reach the lab from the agent container as well:
+
+```sh
+docker compose exec opencode traceroute gw.as64516.lab
+# 1  10.10.1.2        (r1)
+# 2  10.10.5.2        (r5)
+```
+
+Docker's internal resolver names the first hop after the container
+(`birdlab-r1…`); `traceroute -n` shows the address instead.
 
 ### MCP wiring
 
