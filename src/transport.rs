@@ -1,7 +1,10 @@
 //! Running BIRD's command-line client over a local or ssh transport.
 
+use std::io::ErrorKind;
 use std::process::Stdio;
+use std::time::Duration;
 
+use tokio::io::AsyncWriteExt;
 use tokio::process::Command;
 
 use crate::config::{Router, TransportKind};
@@ -68,17 +71,7 @@ impl Router {
             .kill_on_drop(true);
 
         tracing::debug!(router = %self.name, command = %line, "running birdc");
-        let output = tokio::time::timeout(self.timeout, command.output())
-            .await
-            .map_err(|_| ToolError::Timeout {
-                router: self.name.clone(),
-                command: line.to_string(),
-                secs: self.timeout.as_secs(),
-            })?
-            .map_err(|source| ToolError::Spawn {
-                command: self.program_name().to_string(),
-                source,
-            })?;
+        let output = self.run_command(command, line, None).await?;
 
         Ok(Output {
             stdout: String::from_utf8_lossy(&output.stdout).into_owned(),
@@ -132,9 +125,54 @@ impl Router {
         }
     }
 
+    /// Writes a file on the machine that runs BIRD. The write goes to a temp
+    /// file first, so a failed transfer never leaves a half-written config.
+    pub async fn write_file(&self, path: &str, content: &str) -> ToolResult<()> {
+        validate_path(path)?;
+        let temp = format!("{path}.bird-mcp.tmp");
+
+        match self.transport {
+            TransportKind::Local => {
+                tokio::fs::write(&temp, content)
+                    .await
+                    .map_err(|err| ToolError::Io(format!("cannot write {temp}: {err}")))?;
+                tokio::fs::rename(&temp, path)
+                    .await
+                    .map_err(|err| ToolError::Io(format!("cannot replace {path}: {err}")))?;
+            }
+            TransportKind::Ssh => {
+                let line = format!(
+                    "cat > {} && mv -f {} {}",
+                    shell_quote(&temp),
+                    shell_quote(&temp),
+                    shell_quote(path)
+                );
+                let output = self
+                    .run_shell_with_stdin(&line, Some(content.as_bytes()))
+                    .await?;
+                if !output.success() {
+                    return Err(ToolError::CommandFailed {
+                        router: self.name.clone(),
+                        command: line,
+                        status: match output.code {
+                            Some(code) => format!(" (exit {code})"),
+                            None => " (killed)".to_string(),
+                        },
+                        detail: output.detail(),
+                    });
+                }
+            }
+        }
+        Ok(())
+    }
+
     /// Runs a plain shell command through ssh. Only used with paths and commands
     /// this crate builds; never with caller-supplied text.
     async fn run_shell(&self, line: &str) -> ToolResult<Output> {
+        self.run_shell_with_stdin(line, None).await
+    }
+
+    async fn run_shell_with_stdin(&self, line: &str, input: Option<&[u8]>) -> ToolResult<Output> {
         let mut command = Command::new(&self.ssh_bin);
         command
             .arg("-o")
@@ -146,28 +184,78 @@ impl Router {
         }
         command.arg(self.ssh_destination()).arg("--").arg(line);
         command
-            .stdin(Stdio::null())
+            .stdin(if input.is_some() {
+                Stdio::piped()
+            } else {
+                Stdio::null()
+            })
             .stdout(Stdio::piped())
             .stderr(Stdio::piped())
             .kill_on_drop(true);
 
-        let output = tokio::time::timeout(self.timeout, command.output())
-            .await
-            .map_err(|_| ToolError::Timeout {
-                router: self.name.clone(),
-                command: line.to_string(),
-                secs: self.timeout.as_secs(),
-            })?
-            .map_err(|source| ToolError::Spawn {
-                command: self.ssh_bin.clone(),
-                source,
-            })?;
-
+        let output = self.run_command(command, line, input).await?;
         Ok(Output {
             stdout: String::from_utf8_lossy(&output.stdout).into_owned(),
             stderr: String::from_utf8_lossy(&output.stderr).into_owned(),
             code: output.status.code(),
         })
+    }
+
+    /// Runs one command with the router timeout and a short retry for
+    /// `ETXTBSY`. Linux returns that when a just-written script is still open
+    /// for writing in a forked child, which happens with busy test suites (and
+    /// when an operator replaces birdc under a running server).
+    async fn run_command(
+        &self,
+        mut command: Command,
+        label: &str,
+        input: Option<&[u8]>,
+    ) -> ToolResult<std::process::Output> {
+        let deadline = tokio::time::Instant::now() + self.timeout;
+        let mut attempts = 0;
+
+        loop {
+            let remaining = deadline.saturating_duration_since(tokio::time::Instant::now());
+            if remaining.is_zero() {
+                return Err(self.timeout_error(label));
+            }
+
+            let attempt = async {
+                let mut child = command.spawn()?;
+                if let Some(input) = input
+                    && let Some(mut stdin) = child.stdin.take()
+                {
+                    stdin.write_all(input).await?;
+                    stdin.shutdown().await?;
+                }
+                child.wait_with_output().await
+            };
+
+            match tokio::time::timeout(remaining, attempt).await {
+                Err(_) => return Err(self.timeout_error(label)),
+                Ok(Ok(output)) => return Ok(output),
+                Ok(Err(source))
+                    if source.kind() == ErrorKind::ExecutableFileBusy && attempts < 10 =>
+                {
+                    attempts += 1;
+                    tokio::time::sleep(Duration::from_millis(20)).await;
+                }
+                Ok(Err(source)) => {
+                    return Err(ToolError::Spawn {
+                        command: self.program_name().to_string(),
+                        source,
+                    });
+                }
+            }
+        }
+    }
+
+    fn timeout_error(&self, label: &str) -> ToolError {
+        ToolError::Timeout {
+            router: self.name.clone(),
+            command: label.to_string(),
+            secs: self.timeout.as_secs(),
+        }
     }
 
     fn program_name(&self) -> &str {
