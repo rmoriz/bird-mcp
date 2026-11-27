@@ -341,3 +341,7 @@ a live router.
 ## License
 
 MIT
+
+---
+
+*If you like this AI generated slop, consider sponsoring me a RIPE ASN and IPv6 PI?*
