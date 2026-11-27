@@ -1,11 +1,13 @@
-# bird-mcp
+# BIRD-MCP
 
 [![CI](https://github.com/rmoriz/bird-mcp/actions/workflows/ci.yml/badge.svg)](https://github.com/rmoriz/bird-mcp/actions/workflows/ci.yml)
 [![Release](https://github.com/rmoriz/bird-mcp/actions/workflows/release.yml/badge.svg)](https://github.com/rmoriz/bird-mcp/releases)
 
-An MCP (Model Context Protocol) server for the [BIRD Internet Routing Daemon](https://bird.nic.cz/).
-It lets an agent inspect a running BIRD instance — protocols, BGP sessions, routes,
-interfaces — and, only when explicitly allowed, change its configuration.
+BIRD-MCP is an MCP (Model Context Protocol) server for the
+[BIRD Internet Routing Daemon](https://bird.nic.cz/). It lets an agent inspect a
+running BIRD instance — protocols, BGP sessions, routes, interfaces — and, only
+when explicitly allowed, change its configuration. The crate and binary are
+called `bird-mcp`.
 
 The parsers are written against the CLI output of **BIRD 3.4.0** (the checkout in
 `bird/` is pinned to `v3.4.0`). Commands are sent to `birdc`, either on this machine
@@ -294,7 +296,7 @@ cargo test --test live_docker -- --ignored
 
 `tests/compose/` is a manual test environment: five BIRD routers (one per AS) in
 a ring, a customer host per AS, a traffic generator (ping, HTTP, iperf3) and a
-Debian container running OpenCode with `bird-mcp` configured against all five
+Debian container running OpenCode with BIRD-MCP configured against all five
 routers. It needs the `bird/` checkout and Docker Compose:
 
 ```sh
