@@ -7,6 +7,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+- GitHub Actions CI (format, clippy, tests) and a release workflow that builds
+  native binaries for macOS arm64/Intel and Linux arm64/x86_64 on every push to
+  `main`, published as a rolling `latest` pre-release. Pushing a `v*` tag creates
+  a fixed release with generated notes.
+
 ## [0.1.0] - 2026-11-27
 
 ### Added

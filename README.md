@@ -1,5 +1,8 @@
 # bird-mcp
 
+[![CI](https://github.com/rmoriz/bird-mcp/actions/workflows/ci.yml/badge.svg)](https://github.com/rmoriz/bird-mcp/actions/workflows/ci.yml)
+[![Release](https://github.com/rmoriz/bird-mcp/actions/workflows/release.yml/badge.svg)](https://github.com/rmoriz/bird-mcp/releases)
+
 An MCP (Model Context Protocol) server for the [BIRD Internet Routing Daemon](https://bird.nic.cz/).
 It lets an agent inspect a running BIRD instance — protocols, BGP sessions, routes,
 interfaces — and, only when explicitly allowed, change its configuration.
@@ -35,7 +38,21 @@ CLI text). Parsed responses keep the unparsed output when you pass `raw: true`.
 - Key-based ssh for remote routers; the transport uses `BatchMode=yes`, so it never
   prompts for a password.
 
-## Build
+## Install
+
+Prebuilt binaries are on the [releases page](https://github.com/rmoriz/bird-mcp/releases):
+macOS (Apple Silicon and Intel) and Linux (arm64 and x86_64), each as a `.tar.gz`
+with the binary, README, LICENSE and changelog.
+
+`latest` is a rolling pre-release rebuilt on every push to `main`; tags such as
+`v0.1.0` are fixed releases.
+
+```sh
+tar -xzf bird-mcp-*-aarch64-apple-darwin.tar.gz
+sudo install bird-mcp-*/bird-mcp /usr/local/bin/
+```
+
+### Build from source
 
 ```sh
 cargo build --release
