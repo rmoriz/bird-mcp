@@ -11,6 +11,11 @@ The parsers are written against the CLI output of **BIRD 3.4.0** (the checkout i
 `bird/` is pinned to `v3.4.0`). Commands are sent to `birdc`, either on this machine
 or over ssh to the router.
 
+> **Try it on a real topology:** [`tests/compose/`](tests/compose/README.md) starts
+> five BIRD routers (one per AS) with a traffic generator and an OpenCode container
+> wired to all five through this MCP server — including blackholing a prefix and
+> watching the traffic stop.
+
 ## Tools
 
 | Tool | What it does | Writes |
