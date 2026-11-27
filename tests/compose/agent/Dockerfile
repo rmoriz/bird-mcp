@@ -24,7 +24,7 @@ RUN autoreconf -i \
 FROM debian:bookworm-slim
 RUN apt-get update && apt-get install -y --no-install-recommends \
     bash ca-certificates curl git jq less libreadline8 mtr-tiny nano \
-    iproute2 iputils-ping sqlite3 tcpdump tini \
+    iproute2 iputils-ping tcpdump tini \
     && rm -rf /var/lib/apt/lists/*
 
 COPY --from=bird /out/usr/local/sbin/birdc /usr/local/sbin/birdc

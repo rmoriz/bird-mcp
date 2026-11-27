@@ -33,18 +33,18 @@ Pick one:
 # 1. API key: put OPENCODE_API_KEY=... into tests/compose/.env
 cp .env.example .env && $EDITOR .env
 
-# 2. Import the host's opencode-go credential once into the lab volume
-./import-host-login.sh
+# 2. Extract the host's OpenCode Go key into .env and recreate the container
+./use-host-login.sh
 
 # 3. Reuse the whole host data directory live
 OPENCODE_DATA_DIR=$HOME/.local/share/opencode docker compose up -d --force-recreate opencode
 ```
 
-After 1 or 2, recreate the container (`docker compose up -d --force-recreate
-opencode`); `opencode auth list` inside it should list OpenCode Go. Option 3
-shares the SQLite database with the host: do not run host OpenCode and the
-container at the same time, and expect the (large) database to be accessed
-through the mount.
+After option 1, recreate the container (`docker compose up -d --force-recreate
+opencode`); option 2 does that itself. `opencode auth list` inside the container
+should list OpenCode Go. Option 3 shares the SQLite database with the host: do
+not run host OpenCode and the container at the same time, and expect the
+(large) database to be accessed through the mount.
 
 ## What to try in OpenCode
 

@@ -9,8 +9,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 - The compose lab can reuse the host's OpenCode Go login: `OPENCODE_API_KEY`
-  from `.env`, a one-time credential import (`import-host-login.sh`), or a
-  shared OpenCode data directory.
+  from `.env`, `use-host-login.sh` (extracts the host key into `.env`), or a shared
+  OpenCode data directory.
 - `tests/compose/`: a five-AS manual lab (ring of five BIRD routers with eBGP,
   one customer host per AS, a traffic generator doing ping, HTTP and iperf3) and
   a Debian OpenCode container with `bird-mcp` wired to all five routers over
