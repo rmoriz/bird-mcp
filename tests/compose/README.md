@@ -57,7 +57,7 @@ Just ask in natural language; the agent picks the MCP tools.
 
 | Prompt | What happens |
 | --- | --- |
-| "Show status and all BGP sessions on the five routers." | `bird_routers` + `bird_protocols` with `details=true` for r1–r5 |
+| "Show status and all BGP sessions on the five routers." | `bird_fleet` status + `bird_fleet` protocols with `details=true` |
 | "Which path does r1 use for 10.10.4.0/24, and why?" | `bird_routes` with `match_mode: "for"`, `verbose: true` incl. AS path |
 | "Blackhole 10.10.3.0/24 on r1." | `bird_routes_edit` add → config check → reload → verification |
 | "Remove that blackhole again." | `bird_routes_edit` remove |

@@ -190,6 +190,7 @@ async fn run_test() {
         "bird_protocols",
         "bird_routes",
         "bird_interfaces",
+        "bird_fleet",
         "bird_show",
         "bird_config_read",
         "bird_configure",
@@ -346,6 +347,35 @@ async fn run_test() {
     assert_eq!(removed["removed"], 1, "remove: {removed}");
     let content = std::fs::read_to_string(&routes_file).expect("route file");
     assert!(!content.contains("203.0.113.0/24"), "{content}");
+
+    // Fleet checks fan out over the configured routers.
+    let fleet = tool_body(
+        &server
+            .call(17, "bird_fleet", json!({ "check": "status" }))
+            .await,
+    );
+    assert_eq!(fleet["routers"], 2, "fleet: {fleet}");
+    assert!(
+        fleet["results"]
+            .as_array()
+            .expect("results")
+            .iter()
+            .all(|result| result["ok"] == true),
+        "fleet: {fleet}"
+    );
+    assert!(fleet["elapsed_ms"].is_number(), "fleet: {fleet}");
+
+    let unknown = server
+        .call(
+            18,
+            "bird_fleet",
+            json!({ "check": "status", "routers": ["does-not-exist"] }),
+        )
+        .await;
+    assert!(
+        unknown.to_string().contains("unknown router"),
+        "unexpected response: {unknown}"
+    );
 
     // Route edits are refused on read-only routers.
     let readonly = server

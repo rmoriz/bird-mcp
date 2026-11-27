@@ -24,6 +24,8 @@ and fetches HTTP from all other hosts every few seconds.
 ## Useful tool calls
 
 - `bird_routers` — see all five routers and whether they answer.
+- `bird_fleet { "check": "status" }` — one parallel query across all routers
+  (also `protocols`, `routes`, `interfaces`); results carry per-router errors.
 - `bird_status { router: "r3" }` — version, uptime, last reconfiguration.
 - `bird_protocols { router: "r2", details: true }` — BGP session state and counters.
 - `bird_routes { router: "r1", verbose: true }` — full table with AS paths.

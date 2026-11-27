@@ -8,6 +8,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Added
+- `bird_fleet` runs a read-only check (status, protocols, routes, interfaces) on
+  many routers in parallel with bounded concurrency, returning per-router
+  results and `elapsed_ms`. `bird_routers` probes run in parallel too.
 - The compose lab can reuse the host's OpenCode Go login: `OPENCODE_API_KEY`
   from `.env`, `use-host-login.sh` (extracts the host key into `.env`), or a shared
   OpenCode data directory.

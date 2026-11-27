@@ -26,6 +26,7 @@ or over ssh to the router.
 | `bird_routes` | Parsed routes: prefix, destination type, protocol, preference, next hops, attributes; exact/`for`/`in` lookups, table and protocol filters, `count_only` statistics | no |
 | `bird_routes_edit` | Add, remove or list static routes in the managed `routes_file` and reload BIRD; `add` with just a prefix makes a blackhole route | yes |
 | `bird_interfaces` | Interfaces with state, MTU, flags, addresses (or a one-line summary) | no |
+| `bird_fleet` | One read-only check (status, protocols, routes, interfaces) across many routers in parallel | no |
 | `bird_show` | Any other read-only command, e.g. `show bfd sessions`, `show ospf neighbors`, `show symbols`, `show memory` | no |
 | `bird_config_read` | Read the configuration file from the router | no |
 | `bird_configure` | `check`, `apply`, `undo`, `confirm` | check: no, rest: yes |
@@ -36,6 +37,11 @@ or over ssh to the router.
 
 Every tool answers with pretty-printed JSON (except `bird_show`, which returns the
 CLI text). Parsed responses keep the unparsed output when you pass `raw: true`.
+
+With many routers, `bird_fleet { "check": "status" }` queries all of them (or a
+`routers` subset) in parallel and returns per-router results plus `elapsed_ms`;
+`concurrency` bounds the fan-out (default 8). `bird_routers { "probe": true }`
+probes in parallel as well.
 
 ## Requirements
 

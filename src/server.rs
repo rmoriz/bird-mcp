@@ -16,6 +16,9 @@ use crate::error::{ToolError, ToolResult};
 use crate::parse;
 use crate::routes::{self, PROTOCOL_V4, PROTOCOL_V6, RouteKind, StaticRoute};
 
+/// Parallel router queries for fleet-wide read-only calls.
+const DEFAULT_FANOUT: usize = 8;
+
 #[derive(Clone)]
 pub struct Bird {
     state: Arc<State>,
@@ -149,6 +152,67 @@ pub struct InterfacesArgs {
     /// Include the unparsed birdc output (default: false).
     #[serde(default)]
     pub raw: Option<bool>,
+}
+
+#[derive(Debug, Clone, Copy, Deserialize, JsonSchema, PartialEq, Eq)]
+#[serde(rename_all = "lowercase")]
+pub enum FleetCheck {
+    /// Router status (version, uptime, daemon state).
+    Status,
+    /// Protocol instances, optionally with details.
+    Protocols,
+    /// Routes, with the same filters as bird_routes.
+    Routes,
+    /// Interfaces, optionally as a summary.
+    Interfaces,
+}
+
+#[derive(Debug, Deserialize, JsonSchema)]
+pub struct FleetArgs {
+    /// Routers to query. Omit for every configured router.
+    #[serde(default)]
+    pub routers: Option<Vec<String>>,
+    /// status, protocols, routes or interfaces.
+    pub check: FleetCheck,
+    /// Protocols: include details (BGP sessions, timers).
+    #[serde(default)]
+    pub details: Option<bool>,
+    /// Protocols: name or pattern.
+    #[serde(default)]
+    pub name: Option<String>,
+    /// Routes: prefix or IP address.
+    #[serde(default)]
+    pub prefix: Option<String>,
+    /// Routes: exact, for or in.
+    #[serde(default)]
+    pub match_mode: Option<MatchMode>,
+    /// Routes: table name.
+    #[serde(default)]
+    pub table: Option<String>,
+    /// Routes: protocol name or pattern.
+    #[serde(default)]
+    pub protocol: Option<String>,
+    /// Routes: include attributes.
+    #[serde(default)]
+    pub verbose: Option<bool>,
+    /// Routes: only selected routes.
+    #[serde(default)]
+    pub primary: Option<bool>,
+    /// Routes: only statistics.
+    #[serde(default)]
+    pub count_only: Option<bool>,
+    /// Routes: maximum routes per router (default 200).
+    #[serde(default)]
+    pub limit: Option<u32>,
+    /// Interfaces: one line per interface.
+    #[serde(default)]
+    pub summary: Option<bool>,
+    /// Include unparsed birdc output.
+    #[serde(default)]
+    pub raw: Option<bool>,
+    /// Maximum parallel router queries (default 8, max 64).
+    #[serde(default)]
+    pub concurrency: Option<u32>,
 }
 
 #[derive(Debug, Deserialize, JsonSchema)]
@@ -320,32 +384,52 @@ impl Bird {
         Parameters(args): Parameters<RoutersArgs>,
     ) -> Result<CallToolResult, ErrorData> {
         let probe = args.probe.unwrap_or(false);
-        let mut routers = Vec::new();
+        let configured = self.state.config.routers.clone();
+        let mut entries: Vec<Value> = configured
+            .iter()
+            .map(|router| {
+                json!({
+                    "name": router.name,
+                    "transport": router.transport,
+                    "target": router.target(),
+                    "read_only": router.read_only,
+                    "config_file": router.config_file,
+                    "routes_file": router.routes_file,
+                    "routes_preference": router.routes_preference,
+                    "timeout_secs": router.timeout.as_secs(),
+                })
+            })
+            .collect();
 
-        for router in &self.state.config.routers {
-            let mut entry = json!({
-                "name": router.name,
-                "transport": router.transport,
-                "target": router.target(),
-                "read_only": router.read_only,
-                "config_file": router.config_file,
-                "routes_file": router.routes_file,
-                "routes_preference": router.routes_preference,
-                "timeout_secs": router.timeout.as_secs(),
-            });
-            if probe {
-                match router.run_checked("show status").await {
-                    Ok(output) => {
-                        let status = parse::parse_status(&output.stdout);
-                        entry["status"] = json!(status);
+        if probe {
+            let semaphore = Arc::new(tokio::sync::Semaphore::new(DEFAULT_FANOUT));
+            let mut set = tokio::task::JoinSet::new();
+            for (index, router) in configured.into_iter().enumerate() {
+                let permit = semaphore
+                    .clone()
+                    .acquire_owned()
+                    .await
+                    .map_err(|err| ToolError::Io(format!("semaphore closed: {err}")))?;
+                set.spawn(async move {
+                    let _permit = permit;
+                    (index, router.run_checked("show status").await)
+                });
+            }
+
+            while let Some(joined) = set.join_next().await {
+                match joined {
+                    Ok((index, Ok(output))) => {
+                        entries[index]["status"] = json!(parse::parse_status(&output.stdout));
                     }
-                    Err(err) => entry["error"] = json!(err.to_string()),
+                    Ok((index, Err(err))) => {
+                        entries[index]["error"] = json!(err.to_string());
+                    }
+                    Err(err) => tracing::warn!("router probe task failed: {err}"),
                 }
             }
-            routers.push(entry);
         }
 
-        respond(json!({ "routers": routers }))
+        respond(json!({ "routers": entries }))
     }
 
     #[tool(
@@ -357,14 +441,7 @@ impl Bird {
         Parameters(args): Parameters<StatusArgs>,
     ) -> Result<CallToolResult, ErrorData> {
         let router = self.router(args.router.as_deref())?;
-        let output = router.run_checked("show status").await?;
-        let status = parse::parse_status(&output.stdout);
-
-        let mut body = json!({ "router": router.name, "status": status });
-        if args.raw.unwrap_or(false) {
-            body["raw"] = json!(parse::strip_banner(&output.stdout));
-        }
-        respond(body)
+        respond(status_value(router, args.raw.unwrap_or(false)).await?)
     }
 
     #[tool(
@@ -377,28 +454,15 @@ impl Bird {
         Parameters(args): Parameters<ProtocolsArgs>,
     ) -> Result<CallToolResult, ErrorData> {
         let router = self.router(args.router.as_deref())?;
-        let mut command = String::from("show protocols");
-        if args.details.unwrap_or(false) {
-            command.push_str(" all");
-        }
-        if let Some(name) = &args.name {
-            validate_pattern(name, "name")?;
-            command.push(' ');
-            command.push_str(name);
-        }
-
-        let output = router.run_checked(&command).await?;
-        let protocols = parse::parse_protocols(&output.stdout);
-
-        let mut body = json!({
-            "router": router.name,
-            "command": command,
-            "protocols": protocols,
-        });
-        if args.raw.unwrap_or(false) {
-            body["raw"] = json!(parse::strip_banner(&output.stdout));
-        }
-        respond(body)
+        respond(
+            protocols_value(
+                router,
+                args.details.unwrap_or(false),
+                args.name.as_deref(),
+                args.raw.unwrap_or(false),
+            )
+            .await?,
+        )
     }
 
     #[tool(
@@ -412,87 +476,18 @@ impl Bird {
         Parameters(args): Parameters<RoutesArgs>,
     ) -> Result<CallToolResult, ErrorData> {
         let router = self.router(args.router.as_deref())?;
-        let mut command = String::from("show route");
-
-        if let Some(prefix) = &args.prefix {
-            validate_prefix(prefix)?;
-            match args.match_mode.unwrap_or_default() {
-                MatchMode::Exact => {
-                    command.push(' ');
-                    command.push_str(prefix);
-                }
-                MatchMode::For => {
-                    command.push_str(" for ");
-                    command.push_str(prefix);
-                }
-                MatchMode::In => {
-                    command.push_str(" in ");
-                    command.push_str(prefix);
-                }
-            }
-        }
-        if let Some(table) = &args.table {
-            validate_pattern(table, "table")?;
-            command.push_str(" table ");
-            command.push_str(table);
-        }
-        if args.verbose.unwrap_or(false) {
-            command.push_str(" all");
-        }
-        if args.primary.unwrap_or(false) {
-            command.push_str(" primary");
-        }
-        if let Some(protocol) = &args.protocol {
-            validate_pattern(protocol, "protocol")?;
-            command.push_str(" protocol ");
-            command.push_str(protocol);
-        }
-        if args.count_only.unwrap_or(false) {
-            command.push_str(" count");
-        }
-
-        let output = router.run(&command).await?;
-        // `show route <prefix>` exits non-zero with "Network not found" when the
-        // prefix is absent; that is an empty table for callers, not an error.
-        let missing =
-            !output.success() && parse::strip_banner(&output.stdout).contains("Network not found");
-        if !output.success() && !missing {
-            return Err(ToolError::CommandFailed {
-                router: router.name.clone(),
-                command: command.clone(),
-                status: match output.code {
-                    Some(code) => format!(" (exit {code})"),
-                    None => " (killed)".to_string(),
-                },
-                detail: output.detail(),
-            }
-            .into());
-        }
-        let parsed = if missing {
-            parse::Routes::default()
-        } else {
-            parse::parse_routes(&output.stdout)
+        let query = RouteQuery {
+            prefix: args.prefix,
+            match_mode: args.match_mode,
+            table: args.table,
+            protocol: args.protocol,
+            verbose: args.verbose.unwrap_or(false),
+            primary: args.primary.unwrap_or(false),
+            count_only: args.count_only.unwrap_or(false),
+            limit: args.limit,
+            raw: args.raw.unwrap_or(false),
         };
-        let limit = args.limit.unwrap_or(200).clamp(1, 5000) as usize;
-        let parsed_count = parsed.routes.len();
-        let routes: Vec<_> = parsed.routes.into_iter().take(limit).collect();
-
-        let mut body = json!({
-            "router": router.name,
-            "command": command,
-            "routes": routes,
-            "returned": routes.len(),
-            "parsed": parsed_count,
-            "truncated": parsed_count > routes.len(),
-            "counts": parsed.counts,
-        });
-        if !parsed.warnings.is_empty() {
-            body["warnings"] = json!(parsed.warnings);
-        }
-        if args.raw.unwrap_or(false) {
-            body["raw"] = json!(parse::strip_banner(&output.stdout));
-        }
-        respond(body)
+        respond(routes_value(router, &query).await?)
     }
 
     #[tool(
@@ -504,31 +499,129 @@ impl Bird {
         Parameters(args): Parameters<InterfacesArgs>,
     ) -> Result<CallToolResult, ErrorData> {
         let router = self.router(args.router.as_deref())?;
-        let summary = args.summary.unwrap_or(false);
-        let command = if summary {
-            "show interfaces summary"
-        } else {
-            "show interfaces"
-        };
-        let output = router.run_checked(command).await?;
+        respond(
+            interfaces_value(
+                router,
+                args.summary.unwrap_or(false),
+                args.raw.unwrap_or(false),
+            )
+            .await?,
+        )
+    }
 
-        let mut body = if summary {
-            json!({
-                "router": router.name,
-                "summary": true,
-                "interfaces": parse::parse_interface_summary(&output.stdout),
-            })
-        } else {
-            json!({
-                "router": router.name,
-                "summary": false,
-                "interfaces": parse::parse_interfaces(&output.stdout),
-            })
+    #[tool(
+        description = "Run one read-only check on many routers in parallel: status, protocols, \
+                       routes or interfaces. Omit `routers` for every configured router. Each \
+                       result carries its own error; `concurrency` bounds the parallelism \
+                       (default 8, max 64)."
+    )]
+    async fn bird_fleet(
+        &self,
+        Parameters(args): Parameters<FleetArgs>,
+    ) -> Result<CallToolResult, ErrorData> {
+        let started = std::time::Instant::now();
+        let routers: Vec<Router> = match &args.routers {
+            Some(names) => {
+                let mut selected = Vec::with_capacity(names.len());
+                for name in names {
+                    selected.push(self.state.config.router(Some(name))?.clone());
+                }
+                selected
+            }
+            None => self.state.config.routers.clone(),
         };
-        if args.raw.unwrap_or(false) {
-            body["raw"] = json!(parse::strip_banner(&output.stdout));
+        let total = routers.len();
+        let concurrency = args
+            .concurrency
+            .unwrap_or(DEFAULT_FANOUT as u32)
+            .clamp(1, 64) as usize;
+        let check = args.check;
+        let args = Arc::new(args);
+
+        let semaphore = Arc::new(tokio::sync::Semaphore::new(concurrency));
+        let mut set = tokio::task::JoinSet::new();
+        for (index, router) in routers.into_iter().enumerate() {
+            let permit = semaphore
+                .clone()
+                .acquire_owned()
+                .await
+                .map_err(|err| ToolError::Io(format!("semaphore closed: {err}")))?;
+            let args = args.clone();
+            set.spawn(async move {
+                let _permit = permit;
+                let result = match check {
+                    FleetCheck::Status => status_value(&router, args.raw.unwrap_or(false)).await,
+                    FleetCheck::Protocols => {
+                        protocols_value(
+                            &router,
+                            args.details.unwrap_or(false),
+                            args.name.as_deref(),
+                            args.raw.unwrap_or(false),
+                        )
+                        .await
+                    }
+                    FleetCheck::Routes => {
+                        let query = RouteQuery {
+                            prefix: args.prefix.clone(),
+                            match_mode: args.match_mode,
+                            table: args.table.clone(),
+                            protocol: args.protocol.clone(),
+                            verbose: args.verbose.unwrap_or(false),
+                            primary: args.primary.unwrap_or(false),
+                            count_only: args.count_only.unwrap_or(false),
+                            limit: args.limit,
+                            raw: args.raw.unwrap_or(false),
+                        };
+                        routes_value(&router, &query).await
+                    }
+                    FleetCheck::Interfaces => {
+                        interfaces_value(
+                            &router,
+                            args.summary.unwrap_or(false),
+                            args.raw.unwrap_or(false),
+                        )
+                        .await
+                    }
+                };
+                (index, router.name, result)
+            });
         }
-        respond(body)
+
+        let mut results = Vec::with_capacity(total);
+        while let Some(joined) = set.join_next().await {
+            match joined {
+                Ok((index, name, result)) => results.push((index, name, result)),
+                Err(err) => results.push((
+                    usize::MAX,
+                    "task".to_string(),
+                    Err(ToolError::Io(format!("router task failed: {err}"))),
+                )),
+            }
+        }
+        results.sort_by_key(|(index, _, _)| *index);
+
+        let results: Vec<Value> = results
+            .into_iter()
+            .map(|(_, name, result)| match result {
+                Ok(data) => json!({ "router": name, "ok": true, "data": data }),
+                Err(err) => json!({ "router": name, "ok": false, "error": err.to_string() }),
+            })
+            .collect();
+
+        let check_name = match check {
+            FleetCheck::Status => "status",
+            FleetCheck::Protocols => "protocols",
+            FleetCheck::Routes => "routes",
+            FleetCheck::Interfaces => "interfaces",
+        };
+
+        respond(json!({
+            "check": check_name,
+            "routers": results.len(),
+            "concurrency": concurrency,
+            "elapsed_ms": started.elapsed().as_millis(),
+            "results": results,
+        }))
     }
 
     #[tool(
@@ -993,6 +1086,168 @@ impl ServerHandler for Bird {
             rmcp::model::Implementation::new("bird-mcp", env!("CARGO_PKG_VERSION")),
         )
     }
+}
+
+#[derive(Debug, Clone, Default)]
+struct RouteQuery {
+    prefix: Option<String>,
+    match_mode: Option<MatchMode>,
+    table: Option<String>,
+    protocol: Option<String>,
+    verbose: bool,
+    primary: bool,
+    count_only: bool,
+    limit: Option<u32>,
+    raw: bool,
+}
+
+async fn status_value(router: &Router, raw: bool) -> ToolResult<Value> {
+    let output = router.run_checked("show status").await?;
+    let status = parse::parse_status(&output.stdout);
+    let mut body = json!({ "router": router.name, "status": status });
+    if raw {
+        body["raw"] = json!(parse::strip_banner(&output.stdout));
+    }
+    Ok(body)
+}
+
+async fn protocols_value(
+    router: &Router,
+    details: bool,
+    name: Option<&str>,
+    raw: bool,
+) -> ToolResult<Value> {
+    let mut command = String::from("show protocols");
+    if details {
+        command.push_str(" all");
+    }
+    if let Some(name) = name {
+        validate_pattern(name, "name")?;
+        command.push(' ');
+        command.push_str(name);
+    }
+
+    let output = router.run_checked(&command).await?;
+    let protocols = parse::parse_protocols(&output.stdout);
+    let mut body = json!({
+        "router": router.name,
+        "command": command,
+        "protocols": protocols,
+    });
+    if raw {
+        body["raw"] = json!(parse::strip_banner(&output.stdout));
+    }
+    Ok(body)
+}
+
+async fn routes_value(router: &Router, query: &RouteQuery) -> ToolResult<Value> {
+    let mut command = String::from("show route");
+
+    if let Some(prefix) = &query.prefix {
+        validate_prefix(prefix)?;
+        match query.match_mode.unwrap_or_default() {
+            MatchMode::Exact => {
+                command.push(' ');
+                command.push_str(prefix);
+            }
+            MatchMode::For => {
+                command.push_str(" for ");
+                command.push_str(prefix);
+            }
+            MatchMode::In => {
+                command.push_str(" in ");
+                command.push_str(prefix);
+            }
+        }
+    }
+    if let Some(table) = &query.table {
+        validate_pattern(table, "table")?;
+        command.push_str(" table ");
+        command.push_str(table);
+    }
+    if query.verbose {
+        command.push_str(" all");
+    }
+    if query.primary {
+        command.push_str(" primary");
+    }
+    if let Some(protocol) = &query.protocol {
+        validate_pattern(protocol, "protocol")?;
+        command.push_str(" protocol ");
+        command.push_str(protocol);
+    }
+    if query.count_only {
+        command.push_str(" count");
+    }
+
+    let output = router.run(&command).await?;
+    // `show route <prefix>` exits non-zero with "Network not found" when the
+    // prefix is absent; that is an empty table for callers, not an error.
+    let missing =
+        !output.success() && parse::strip_banner(&output.stdout).contains("Network not found");
+    if !output.success() && !missing {
+        return Err(ToolError::CommandFailed {
+            router: router.name.clone(),
+            command: command.clone(),
+            status: match output.code {
+                Some(code) => format!(" (exit {code})"),
+                None => " (killed)".to_string(),
+            },
+            detail: output.detail(),
+        });
+    }
+    let parsed = if missing {
+        parse::Routes::default()
+    } else {
+        parse::parse_routes(&output.stdout)
+    };
+    let limit = query.limit.unwrap_or(200).clamp(1, 5000) as usize;
+    let parsed_count = parsed.routes.len();
+    let routes: Vec<_> = parsed.routes.into_iter().take(limit).collect();
+
+    let mut body = json!({
+        "router": router.name,
+        "command": command,
+        "routes": routes,
+        "returned": routes.len(),
+        "parsed": parsed_count,
+        "truncated": parsed_count > routes.len(),
+        "counts": parsed.counts,
+    });
+    if !parsed.warnings.is_empty() {
+        body["warnings"] = json!(parsed.warnings);
+    }
+    if query.raw {
+        body["raw"] = json!(parse::strip_banner(&output.stdout));
+    }
+    Ok(body)
+}
+
+async fn interfaces_value(router: &Router, summary: bool, raw: bool) -> ToolResult<Value> {
+    let command = if summary {
+        "show interfaces summary"
+    } else {
+        "show interfaces"
+    };
+    let output = router.run_checked(command).await?;
+
+    let mut body = if summary {
+        json!({
+            "router": router.name,
+            "summary": true,
+            "interfaces": parse::parse_interface_summary(&output.stdout),
+        })
+    } else {
+        json!({
+            "router": router.name,
+            "summary": false,
+            "interfaces": parse::parse_interfaces(&output.stdout),
+        })
+    };
+    if raw {
+        body["raw"] = json!(parse::strip_banner(&output.stdout));
+    }
+    Ok(body)
 }
 
 fn respond(value: Value) -> Result<CallToolResult, ErrorData> {
