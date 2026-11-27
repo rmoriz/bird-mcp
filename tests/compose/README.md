@@ -120,9 +120,10 @@ names are injected with Compose `extra_hosts`, so no DNS service is needed:
 
 | Name | Address |
 | --- | --- |
-| `r1.lab` … `r5.lab` | `10.10.N.2` (router N) |
-| `h1.lab` … `h5.lab` | `10.10.N.3` (host N) |
-| `sim.lab` | `10.10.1.4` |
+| `gw.as64512.lab` … `gw.as64516.lab` | `10.10.N.2` (router / gateway of AS6451N) |
+| `host.as64512.lab` … `host.as64516.lab` | `10.10.N.3` (customer host in AS6451N) |
+| `sim.as64512.lab` | `10.10.1.4` (traffic generator behind AS64512) |
+| `r1.lab` … `r5.lab`, `h1.lab` … `h5.lab`, `sim.lab` | short aliases for the same addresses |
 | `r1-link12.lab`, `r2-link12.lab` | `10.0.12.2`, `10.0.12.3` |
 | `r2-link23.lab`, `r3-link23.lab` | `10.0.23.2`, `10.0.23.3` |
 | `r3-link34.lab`, `r4-link34.lab` | `10.0.34.2`, `10.0.34.3` |
@@ -130,8 +131,9 @@ names are injected with Compose `extra_hosts`, so no DNS service is needed:
 | `r5-link51.lab`, `r1-link51.lab` | `10.0.51.2`, `10.0.51.3` |
 
 ```sh
-docker compose exec h1 ping -c1 r4.lab
-docker compose exec h1 traceroute r5.lab
+docker compose exec h1 ping -c1 gw.as64515.lab
+docker compose exec h1 traceroute gw.as64516.lab
+docker compose exec h1 getent hosts host.as64514.lab
 docker compose exec r2 getent hosts r3-link23.lab
 ```
 
