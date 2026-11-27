@@ -1,11 +1,11 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1240 860" width="1240" height="860"
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1240 1040" width="1240" height="1040"
      role="img" aria-labelledby="lab-topology-title lab-topology-desc"
      font-family="ui-sans-serif, -apple-system, 'Segoe UI', sans-serif">
   <title id="lab-topology-title">Five-AS BIRD lab topology</title>
-  <desc id="lab-topology-desc">Five BIRD 3.4 routers, one per AS, connected in an eBGP ring. Each router originates a 10.10.N.0/24 prefix and has one customer host; a traffic generator sits behind r1.</desc>
+  <desc id="lab-topology-desc">Five BIRD 3.4 routers, one per AS, connected in an eBGP ring. Each router originates a 10.10.N.0/24 prefix and has one customer host; a traffic generator sits behind r1. An OpenCode container with BIRD-MCP talks to all five control sockets and queries a fictional RIPE-style WHOIS server.</desc>
 
-  <rect width="1240" height="860" fill="#f7f7f5"/>
+  <rect width="1240" height="1040" fill="#f7f7f5"/>
 
   <text x="60" y="60" font-family="Georgia, 'Times New Roman', serif" font-size="30" fill="#1f2933">Five-AS BIRD lab</text>
   <text x="60" y="88" font-size="14" fill="#6b7280">Five BIRD 3.4 routers · eBGP ring · kernel forwarding · routes managed through BIRD-MCP</text>
@@ -19,6 +19,13 @@
     <line x1="190" y1="345" x2="620" y2="175"/>
   </g>
 
+  <!-- management link to the ring center, with a hop over the r3-r4 link -->
+  <rect x="610" y="637" width="20" height="16" fill="#f7f7f5"/>
+  <path d="M 430 906 H 620 V 500" fill="none" stroke="#6b7280" stroke-width="1.5" stroke-dasharray="5,4"/>
+  <circle cx="620" cy="500" r="4" fill="#6b7280"/>
+  <rect x="632" y="692" width="222" height="16" fill="#f7f7f5"/>
+  <text x="632" y="704" font-size="11" fill="#6b7280">MCP control sockets · r1 … r5</text>
+
   <!-- link labels -->
   <g font-family="ui-monospace, 'SF Mono', Menlo, monospace" font-size="11" fill="#6b7280" text-anchor="middle">
     <rect x="790" y="243" width="92" height="16" fill="#f7f7f5"/>
@@ -27,8 +34,8 @@
     <rect x="902" y="517" width="92" height="16" fill="#f7f7f5"/>
     <text x="948" y="529">10.0.23.0/29</text>
 
-    <rect x="574" y="627" width="92" height="16" fill="#f7f7f5"/>
-    <text x="620" y="639">10.0.34.0/29</text>
+    <rect x="474" y="627" width="92" height="16" fill="#f7f7f5"/>
+    <text x="520" y="639">10.0.34.0/29</text>
 
     <rect x="246" y="517" width="92" height="16" fill="#f7f7f5"/>
     <text x="292" y="529">10.0.45.0/29</text>
@@ -119,5 +126,29 @@
     <text x="706" y="342" font-size="11" fill="#6b7280">ping · HTTP · iperf3</text>
   </g>
 
-  <text x="60" y="828" font-size="12" fill="#6b7280">Every router includes <tspan font-family="ui-monospace, 'SF Mono', Menlo, monospace" fill="#1f2933">/etc/bird/state/bird-mcp.conf</tspan>; <tspan font-family="ui-monospace, 'SF Mono', Menlo, monospace" fill="#1f2933">bird_routes_edit</tspan> writes there, checks and reloads.</text>
+  <!-- management plane -->
+  <rect x="60" y="852" width="1120" height="128" rx="8" fill="none" stroke="#cfc8bd" stroke-width="1.5" stroke-dasharray="6,4"/>
+  <text x="76" y="876" font-size="12" fill="#6b7280">compose default network</text>
+
+  <g>
+    <rect x="100" y="892" width="330" height="72" rx="6" fill="#ffffff" stroke="#d6d1c8" stroke-width="1.5"/>
+    <text x="116" y="916" font-size="15" font-weight="600" fill="#1f2933">opencode</text>
+    <text x="200" y="916" font-family="ui-monospace, 'SF Mono', Menlo, monospace" font-size="12" fill="#6b7280">OpenCode · BIRD-MCP</text>
+    <text x="116" y="936" font-size="11" fill="#6b7280">MCP server with r1 … r5</text>
+    <text x="116" y="954" font-size="11" fill="#6b7280">control sockets shared from every router</text>
+  </g>
+
+  <g>
+    <rect x="800" y="892" width="300" height="72" rx="6" fill="#ffffff" stroke="#d6d1c8" stroke-width="1.5"/>
+    <text x="816" y="916" font-size="15" font-weight="600" fill="#1f2933">whois.lab</text>
+    <text x="900" y="916" font-family="ui-monospace, 'SF Mono', Menlo, monospace" font-size="12" fill="#6b7280">TCP :43</text>
+    <text x="816" y="936" font-size="11" fill="#6b7280">fictional RIPE-style inetnum data</text>
+    <text x="816" y="954" font-family="ui-monospace, 'SF Mono', Menlo, monospace" font-size="11" fill="#6b7280">whois/data.txt</text>
+  </g>
+
+  <line x1="430" y1="928" x2="800" y2="928" stroke="#b8b2a8" stroke-width="1.5"/>
+  <rect x="568" y="920" width="94" height="16" fill="#f7f7f5"/>
+  <text x="615" y="932" text-anchor="middle" font-family="ui-monospace, 'SF Mono', Menlo, monospace" font-size="11" fill="#6b7280">whois :43</text>
+
+  <text x="60" y="1012" font-size="12" fill="#6b7280">Every router includes <tspan font-family="ui-monospace, 'SF Mono', Menlo, monospace" fill="#1f2933">/etc/bird/state/bird-mcp.conf</tspan>; <tspan font-family="ui-monospace, 'SF Mono', Menlo, monospace" fill="#1f2933">bird_routes_edit</tspan> writes there, checks and reloads.</text>
 </svg>

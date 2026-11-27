@@ -121,11 +121,26 @@ Add and remove were exercised on each of the five routers.
 
 ## WHOIS data
 
-A small fictional ROPE-style WHOIS server runs as the compose service `whois` with the
-hostname `whois.lab`. It serves
-static `inetnum` objects for the five customer prefixes and the five eBGP links
-from `whois/data.txt` — port 43 on the lab network, `localhost:4343` on the
-host.
+A small fictional RIPE-style WHOIS server runs as the compose service `whois`
+with the hostname `whois.lab`. It serves static `inetnum` objects for the five
+customer prefixes and the five eBGP links from `whois/data.txt` — port 43 on the
+lab network, `localhost:4343` on the host.
+
+The records look like a registry export but are deliberately fictional:
+`admin-c`/`tech-c` are `LAB-ROPE` and `source` is `ROPE`, not `RIPE`.
+
+| inetnum | netname | object |
+| --- | --- | --- |
+| `10.10.1.0 - 10.10.1.255` | `LAB-AS64512` | customer prefix r1 (AS64512) |
+| `10.10.2.0 - 10.10.2.255` | `LAB-AS64513` | customer prefix r2 (AS64513) |
+| `10.10.3.0 - 10.10.3.255` | `LAB-AS64514` | customer prefix r3 (AS64514) |
+| `10.10.4.0 - 10.10.4.255` | `LAB-AS64515` | customer prefix r4 (AS64515) |
+| `10.10.5.0 - 10.10.5.255` | `LAB-AS64516` | customer prefix r5 (AS64516) |
+| `10.0.12.0 - 10.0.12.7` | `LAB-LINK-R1-R2` | eBGP link r1 – r2 |
+| `10.0.23.0 - 10.0.23.7` | `LAB-LINK-R2-R3` | eBGP link r2 – r3 |
+| `10.0.34.0 - 10.0.34.7` | `LAB-LINK-R3-R4` | eBGP link r3 – r4 |
+| `10.0.45.0 - 10.0.45.7` | `LAB-LINK-R4-R5` | eBGP link r4 – r5 |
+| `10.0.51.0 - 10.0.51.7` | `LAB-LINK-R5-R1` | eBGP link r5 – r1 |
 
 ```sh
 # from the OpenCode container
@@ -140,17 +155,22 @@ whois -h 127.0.0.1 -p 4343 10.10.4.0
 Example response:
 
 ```
+% This is the BIRD-MCP lab WHOIS server (fictional).
+% Query: 10.10.3.0
+
 inetnum:        10.10.3.0 - 10.10.3.255
 netname:        LAB-AS64514
 descr:          BIRD-MCP lab customer prefix for AS64514
 country:        DE
+admin-c:        LAB-ROPE
+tech-c:         LAB-ROPE
 status:         ASSIGNED PA
 ...
 source:         ROPE
 ```
 
 Querying an address without an object returns `%ERROR:101: no entries found`.
-The data is static: edit `whois/data.txt` and restart the service.
+The data is static: edit `whois/data.txt` and run `docker compose restart whois`.
 
 ## Optional: shell checks without OpenCode
 
