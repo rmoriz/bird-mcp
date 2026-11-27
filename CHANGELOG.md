@@ -9,7 +9,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 - A dnsmasq service (`dns.lab`, `10.99.0.53`) provides forward and reverse DNS
-  for the lab zone; all containers use it and forward other queries upstream.
+  for the lab zone, including names for the Docker bridge gateways
+  (`docker-as1.lab`, `docker-link12.lab`, `docker-mgmt.lab`); all containers use
+  it and forward other queries upstream.
 - Lab containers resolve `gw.as6451N.lab`, `host.as6451N.lab`,
   `sim.as64512.lab`, short aliases `rN.lab` / `hN.lab`, and per-link names such
   as `r3-link23.lab` through Compose `extra_hosts`.

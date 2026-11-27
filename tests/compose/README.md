@@ -132,6 +132,9 @@ fallback:
 | `r3-link34.lab`, `r4-link34.lab` | `10.0.34.2`, `10.0.34.3` |
 | `r4-link45.lab`, `r5-link45.lab` | `10.0.45.2`, `10.0.45.3` |
 | `r5-link51.lab`, `r1-link51.lab` | `10.0.51.2`, `10.0.51.3` |
+| `docker-link12.lab` … `docker-link51.lab` | `10.0.X.1` (Docker bridge gateway) |
+| `docker-as1.lab` … `docker-as5.lab` | `10.10.N.1` (Docker bridge gateway) |
+| `docker-mgmt.lab` | `10.99.0.1` (Docker bridge gateway) |
 
 ```sh
 docker compose exec h1 ping -c1 gw.as64515.lab
@@ -141,8 +144,9 @@ docker compose exec h1 dig -x 10.10.3.2 +short      # gw.as64514.lab
 docker compose exec opencode dig -x 10.10.1.2 +short # gw.as64512.lab
 ```
 
-Within each AS subnet, `.1` is Docker's bridge gateway; the BIRD router is
-`.2` (`gw.as645NN.lab`).
+Within each subnet, `.1` is Docker's bridge gateway (`docker-…​.lab`) and `.2`
+is the BIRD router (`gw.as645NN.lab`). The gateways are the Docker VM, not BIRD;
+naming them keeps traceroute output unambiguous.
 
 The OpenCode container resolves the lab names through the DNS service, but it
 has no route into the 10.10.0.0/16 prefixes. Use the control sockets or
