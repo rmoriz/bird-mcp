@@ -8,6 +8,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Added
+- Lab containers resolve `rN.lab`, `hN.lab`, `sim.lab` and per-link names such
+  as `r3-link23.lab` through Compose `extra_hosts`.
 - The OpenCode lab image includes a network toolbox: `mtr`, `traceroute`,
   `tracepath`, `ping`, `fping`, `arping`, `dig`, `nc`, `socat`, `tcpdump`,
   `iperf3`, `ethtool` and `whois`.

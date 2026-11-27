@@ -21,6 +21,11 @@ RTS_BGP; }; }`), so traffic is actually forwarded.
 Hosts `10.10.N.3` sit behind router N; the traffic generator `10.10.1.4` pings
 and fetches HTTP from all other hosts every few seconds.
 
+Every lab container resolves the others by name: `rN.lab`, `hN.lab`, `sim.lab`
+and `rX-linkYZ.lab` for link addresses (for example `r3-link23.lab`). Use the
+names in `ping`, `traceroute` and `mtr`; the MCP tools still take router names
+(`r1` … `r5`).
+
 ## Useful tool calls
 
 - `bird_routers` — see all five routers and whether they answer.

@@ -113,6 +113,32 @@ BGP routes over eBGP and installs BGP routes in the kernel, so traffic really
 traverses the ring. Hosts are `10.10.N.3` behind router N; `sim` is
 `10.10.1.4` behind r1.
 
+### Lab hostnames
+
+Every router, host and the traffic generator resolves the others by name. The
+names are injected with Compose `extra_hosts`, so no DNS service is needed:
+
+| Name | Address |
+| --- | --- |
+| `r1.lab` … `r5.lab` | `10.10.N.2` (router N) |
+| `h1.lab` … `h5.lab` | `10.10.N.3` (host N) |
+| `sim.lab` | `10.10.1.4` |
+| `r1-link12.lab`, `r2-link12.lab` | `10.0.12.2`, `10.0.12.3` |
+| `r2-link23.lab`, `r3-link23.lab` | `10.0.23.2`, `10.0.23.3` |
+| `r3-link34.lab`, `r4-link34.lab` | `10.0.34.2`, `10.0.34.3` |
+| `r4-link45.lab`, `r5-link45.lab` | `10.0.45.2`, `10.0.45.3` |
+| `r5-link51.lab`, `r1-link51.lab` | `10.0.51.2`, `10.0.51.3` |
+
+```sh
+docker compose exec h1 ping -c1 r4.lab
+docker compose exec h1 traceroute r5.lab
+docker compose exec r2 getent hosts r3-link23.lab
+```
+
+The OpenCode container is not attached to the lab networks, so it resolves only
+Compose service names and `whois.lab` — use the control sockets or `bird_fleet`
+for the routers.
+
 ### MCP wiring
 
 One MCP server (`bird`) exposes all five routers through the `router` argument.
