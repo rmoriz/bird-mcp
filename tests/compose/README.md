@@ -94,7 +94,7 @@ AS64515 once a minute.
 ## Topology
 
 <p align="center">
-  <img src="docs/topology.svg" width="1000"
+  <img src="docs/topology.svg?v=2" width="1000"
        alt="Five BIRD routers in an eBGP ring, one per AS, each with a customer prefix and host; a traffic generator sits behind r1">
 </p>
 
