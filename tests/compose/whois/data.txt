@@ -1,0 +1,119 @@
+inetnum:        10.10.1.0 - 10.10.1.255
+netname:        LAB-AS64512
+descr:          BIRD-MCP lab customer prefix for AS64512
+country:        DE
+admin-c:        LAB-RIPE
+tech-c:         LAB-RIPE
+status:         ASSIGNED PA
+mnt-by:         LAB-MNT
+created:        2026-11-27T00:00:00Z
+last-modified:  2026-11-27T00:00:00Z
+source:         RIPE
+
+inetnum:        10.10.2.0 - 10.10.2.255
+netname:        LAB-AS64513
+descr:          BIRD-MCP lab customer prefix for AS64513
+country:        DE
+admin-c:        LAB-RIPE
+tech-c:         LAB-RIPE
+status:         ASSIGNED PA
+mnt-by:         LAB-MNT
+created:        2026-11-27T00:00:00Z
+last-modified:  2026-11-27T00:00:00Z
+source:         RIPE
+
+inetnum:        10.10.3.0 - 10.10.3.255
+netname:        LAB-AS64514
+descr:          BIRD-MCP lab customer prefix for AS64514
+country:        DE
+admin-c:        LAB-RIPE
+tech-c:         LAB-RIPE
+status:         ASSIGNED PA
+mnt-by:         LAB-MNT
+created:        2026-11-27T00:00:00Z
+last-modified:  2026-11-27T00:00:00Z
+source:         RIPE
+
+inetnum:        10.10.4.0 - 10.10.4.255
+netname:        LAB-AS64515
+descr:          BIRD-MCP lab customer prefix for AS64515
+country:        DE
+admin-c:        LAB-RIPE
+tech-c:         LAB-RIPE
+status:         ASSIGNED PA
+mnt-by:         LAB-MNT
+created:        2026-11-27T00:00:00Z
+last-modified:  2026-11-27T00:00:00Z
+source:         RIPE
+
+inetnum:        10.10.5.0 - 10.10.5.255
+netname:        LAB-AS64516
+descr:          BIRD-MCP lab customer prefix for AS64516
+country:        DE
+admin-c:        LAB-RIPE
+tech-c:         LAB-RIPE
+status:         ASSIGNED PA
+mnt-by:         LAB-MNT
+created:        2026-11-27T00:00:00Z
+last-modified:  2026-11-27T00:00:00Z
+source:         RIPE
+
+inetnum:        10.0.12.0 - 10.0.12.7
+netname:        LAB-LINK-R1-R2
+descr:          BIRD-MCP lab eBGP link r1 (AS64512) - r2 (AS64513)
+country:        DE
+admin-c:        LAB-RIPE
+tech-c:         LAB-RIPE
+status:         ASSIGNED PA
+mnt-by:         LAB-MNT
+created:        2026-11-27T00:00:00Z
+last-modified:  2026-11-27T00:00:00Z
+source:         RIPE
+
+inetnum:        10.0.23.0 - 10.0.23.7
+netname:        LAB-LINK-R2-R3
+descr:          BIRD-MCP lab eBGP link r2 (AS64513) - r3 (AS64514)
+country:        DE
+admin-c:        LAB-RIPE
+tech-c:         LAB-RIPE
+status:         ASSIGNED PA
+mnt-by:         LAB-MNT
+created:        2026-11-27T00:00:00Z
+last-modified:  2026-11-27T00:00:00Z
+source:         RIPE
+
+inetnum:        10.0.34.0 - 10.0.34.7
+netname:        LAB-LINK-R3-R4
+descr:          BIRD-MCP lab eBGP link r3 (AS64514) - r4 (AS64515)
+country:        DE
+admin-c:        LAB-RIPE
+tech-c:         LAB-RIPE
+status:         ASSIGNED PA
+mnt-by:         LAB-MNT
+created:        2026-11-27T00:00:00Z
+last-modified:  2026-11-27T00:00:00Z
+source:         RIPE
+
+inetnum:        10.0.45.0 - 10.0.45.7
+netname:        LAB-LINK-R4-R5
+descr:          BIRD-MCP lab eBGP link r4 (AS64515) - r5 (AS64516)
+country:        DE
+admin-c:        LAB-RIPE
+tech-c:         LAB-RIPE
+status:         ASSIGNED PA
+mnt-by:         LAB-MNT
+created:        2026-11-27T00:00:00Z
+last-modified:  2026-11-27T00:00:00Z
+source:         RIPE
+
+inetnum:        10.0.51.0 - 10.0.51.7
+netname:        LAB-LINK-R5-R1
+descr:          BIRD-MCP lab eBGP link r5 (AS64516) - r1 (AS64512)
+country:        DE
+admin-c:        LAB-RIPE
+tech-c:         LAB-RIPE
+status:         ASSIGNED PA
+mnt-by:         LAB-MNT
+created:        2026-11-27T00:00:00Z
+last-modified:  2026-11-27T00:00:00Z
+source:         RIPE

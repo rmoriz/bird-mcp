@@ -32,6 +32,8 @@ and fetches HTTP from all other hosts every few seconds.
 - `bird_routes { router: "r1", prefix: "10.10.3.0/24", match_mode: "for" }` —
   which path r1 would use for that destination.
 - `bird_show { router: "r4", command: "show symbols" }` — anything else read-only.
+- `whois -h whois.lab 10.10.3.0` — RIPE-style inetnum data for the lab prefixes and
+  links (service `whois`, static data in `whois/data.txt`).
 - `bird_routes_edit` — add or remove routes on a router. Example:
   `{"router":"r1","action":"add","prefix":"10.10.3.0/24"}` blackholes that
   prefix on r1 and announces it to the ring (remote blackhole). Remove it with

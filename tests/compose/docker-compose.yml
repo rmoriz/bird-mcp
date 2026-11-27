@@ -205,6 +205,21 @@ services:
       as1:
         ipv4_address: 10.10.1.4
 
+  # Static RIPE-style inetnum data for the lab networks. Reachable as `whois`
+  # on the compose network and as localhost:${WHOIS_PORT:-4343} from the host.
+  whois:
+    build: ./whois
+    image: bird-mcp-lab-whois:latest
+    container_name: birdlab-whois
+    hostname: whois.lab
+    networks:
+      default:
+        aliases:
+          - whois.lab
+    ports:
+      - "${WHOIS_PORT:-4343}:43"
+    restart: unless-stopped
+
   # Debian image with birdc, bird-mcp and OpenCode, configured with the lab's
   # five routers as one MCP server.
   opencode:
