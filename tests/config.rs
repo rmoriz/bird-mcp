@@ -174,3 +174,30 @@ fn routers_are_looked_up_by_name() {
     assert!(err.to_string().contains("unknown router 'nope'"));
     assert!(err.to_string().contains("r1, r2"));
 }
+
+#[test]
+fn routes_file_must_be_absolute() {
+    let home = home();
+    let home_path = home.path().to_string_lossy().to_string();
+    let json = r#"[{"name": "r1", "routes_file": "relative.conf"}]"#;
+    let err = Config::from_pairs(&[("HOME", &home_path), ("BIRD_MCP_ROUTERS", json)]).unwrap_err();
+    assert!(
+        err.to_string()
+            .contains("routes_file must be an absolute path")
+    );
+}
+
+#[test]
+fn routes_preference_defaults_and_env_override() {
+    let home = home();
+    let home_path = home.path().to_string_lossy().to_string();
+    let json = r#"[{"name": "r1", "routes_file": "/etc/bird/routes.conf"}]"#;
+    let config =
+        Config::from_pairs(&[("HOME", &home_path), ("BIRD_MCP_ROUTERS", json)]).expect("config");
+    assert_eq!(config.routers[0].routes_preference, 200);
+
+    let json = r#"[{"name": "r1", "routes_preference": 150}]"#;
+    let config =
+        Config::from_pairs(&[("HOME", &home_path), ("BIRD_MCP_ROUTERS", json)]).expect("config");
+    assert_eq!(config.routers[0].routes_preference, 150);
+}

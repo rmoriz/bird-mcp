@@ -8,6 +8,10 @@ The files here reproduce the lab that `tests/fixtures/` was recorded from and th
 - `r1.conf`, `r2.conf` — two BIRD 3.4.0 routers, AS 64512 and 64513, peering over
   a docker bridge (172.30.0.11 / 172.30.0.12). r1 has two routes for 192.0.2.0/24
   (one primary, one not) and receives a BGP route for 203.0.113.0/24.
+- `state/` — bind-mounted into r1 as `/etc/bird/state` and included from
+  `r1.conf`. The ignored live test uses it as `routes_file` and adds/removes a
+  blackhole route there. The directory, not a single file, is mounted so the
+  tool's atomic rename stays visible inside the container.
 - `bad.conf` — syntax error used for the failing `configure check` fixture.
 - `capture.sh` — builds the image, starts both containers and rewrites
   `tests/fixtures/` from real birdc output.

@@ -19,13 +19,22 @@ struct Server {
 }
 
 impl Server {
-    async fn start(birdc: &Path, home: &Path) -> Server {
-        let routers = json!([{
-            "name": "lab",
-            "transport": "local",
-            "birdc": birdc.to_string_lossy(),
-            "read_only": true,
-        }]);
+    async fn start(birdc: &Path, home: &Path, routes_file: &Path) -> Server {
+        let routers = json!([
+            {
+                "name": "lab",
+                "transport": "local",
+                "birdc": birdc.to_string_lossy(),
+                "read_only": true,
+            },
+            {
+                "name": "rw",
+                "transport": "local",
+                "birdc": birdc.to_string_lossy(),
+                "read_only": false,
+                "routes_file": routes_file.to_string_lossy(),
+            }
+        ]);
 
         let mut child = Command::new(env!("CARGO_BIN_EXE_bird-mcp"))
             .env("BIRD_MCP_ROUTERS", routers.to_string())
@@ -122,6 +131,21 @@ case "$1" in
   "show route") cat '{}' ;;
   "show route all") cat '{}' ;;
   "show protocols") cat '{}' ;;
+  "configure check")
+    echo "BIRD 3.4.0 ready."
+    echo "Reading configuration from /etc/bird/bird.conf"
+    echo "Configuration OK"
+    ;;
+  "configure")
+    echo "BIRD 3.4.0 ready."
+    echo "Reading configuration from /etc/bird/bird.conf"
+    echo "Reconfigured"
+    ;;
+  "show route 203.0.113.0/24")
+    echo "BIRD 3.4.0 ready."
+    echo "Table master4:"
+    echo "203.0.113.0/24      blackhole [bird_mcp_static4 13:00:00.000] * (200)"
+    ;;
   *) echo "unexpected command: $*" >&2; exit 1 ;;
 esac
 "#,
@@ -140,7 +164,8 @@ esac
 async fn run_test() {
     let dir = tempfile::tempdir().expect("temp dir");
     let birdc = fake_birdc(dir.path());
-    let mut server = Server::start(&birdc, dir.path()).await;
+    let routes_file = dir.path().join("bird-mcp.conf");
+    let mut server = Server::start(&birdc, dir.path(), &routes_file).await;
     server.initialize().await;
 
     // Tool discovery.
@@ -169,6 +194,7 @@ async fn run_test() {
         "bird_config_read",
         "bird_configure",
         "bird_protocol_control",
+        "bird_routes_edit",
         "bird_docs_search",
         "bird_docs_section",
         "bird_docs_read",
@@ -219,7 +245,131 @@ async fn run_test() {
         "unexpected response: {refused}"
     );
 
+    // Managed static routes: list, add, duplicate, via, dry run and remove.
+    let listed = tool_body(
+        &server
+            .call(
+                7,
+                "bird_routes_edit",
+                json!({
+                    "router": "rw", "action": "list"
+                }),
+            )
+            .await,
+    );
+    assert_eq!(listed["exists"], false);
+    assert_eq!(listed["routes"].as_array().expect("routes").len(), 0);
+
+    let added = tool_body(
+        &server
+            .call(
+                8,
+                "bird_routes_edit",
+                json!({
+                    "router": "rw", "action": "add", "prefix": "203.0.113.0/24"
+                }),
+            )
+            .await,
+    );
+    assert_eq!(added["changed"], true, "add: {added}");
+    assert_eq!(added["applied"], true, "add: {added}");
+    assert_eq!(added["verification"]["ok"], true, "add: {added}");
+    let content = std::fs::read_to_string(&routes_file).expect("route file");
+    assert!(
+        content.contains("route 203.0.113.0/24 blackhole;"),
+        "{content}"
+    );
+    assert!(
+        content.contains("protocol static bird_mcp_static4"),
+        "{content}"
+    );
+
+    let duplicate = tool_body(
+        &server
+            .call(
+                9,
+                "bird_routes_edit",
+                json!({
+                    "router": "rw", "action": "add", "prefix": "203.0.113.0/24"
+                }),
+            )
+            .await,
+    );
+    assert_eq!(duplicate["changed"], false, "duplicate: {duplicate}");
+
+    let via = tool_body(
+        &server
+            .call(
+                10,
+                "bird_routes_edit",
+                json!({
+                    "router": "rw", "action": "add", "prefix": "198.51.100.0/24",
+                    "kind": "via", "via": "192.0.2.1", "dev": "eth0"
+                }),
+            )
+            .await,
+    );
+    assert_eq!(via["changed"], true, "via: {via}");
+    let content = std::fs::read_to_string(&routes_file).expect("route file");
+    assert!(content.contains("route 198.51.100.0/24 via 192.0.2.1 dev eth0;"));
+
+    let before_dry_run = content.clone();
+    let dry_run = tool_body(
+        &server
+            .call(
+                11,
+                "bird_routes_edit",
+                json!({
+                    "router": "rw", "action": "add", "prefix": "192.0.2.0/24", "dry_run": true
+                }),
+            )
+            .await,
+    );
+    assert_eq!(dry_run["dry_run"], true, "dry run: {dry_run}");
+    assert_eq!(
+        std::fs::read_to_string(&routes_file).expect("route file"),
+        before_dry_run
+    );
+
+    let removed = tool_body(
+        &server
+            .call(
+                12,
+                "bird_routes_edit",
+                json!({
+                    "router": "rw", "action": "remove", "prefix": "203.0.113.0/24"
+                }),
+            )
+            .await,
+    );
+    assert_eq!(removed["changed"], true, "remove: {removed}");
+    assert_eq!(removed["removed"], 1, "remove: {removed}");
+    let content = std::fs::read_to_string(&routes_file).expect("route file");
+    assert!(!content.contains("203.0.113.0/24"), "{content}");
+
+    // Route edits are refused on read-only routers.
+    let readonly = server
+        .call(
+            13,
+            "bird_routes_edit",
+            json!({
+                "router": "lab", "action": "add", "prefix": "203.0.113.0/24"
+            }),
+        )
+        .await;
+    assert!(
+        readonly.to_string().contains("read-only"),
+        "unexpected response: {readonly}"
+    );
+
     server.shutdown().await;
+}
+
+fn tool_body(response: &Value) -> Value {
+    let text = response["result"]["content"][0]["text"]
+        .as_str()
+        .unwrap_or_else(|| panic!("no content: {response}"));
+    serde_json::from_str(text).expect("tool response JSON")
 }
 
 #[tokio::test]

@@ -8,10 +8,23 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Added
+- `bird_routes_edit`: add, remove and list static routes (blackhole, unreachable,
+  prohibit or via gateway/interface) in a managed include file, with
+  `configure check` before apply, automatic restore on failure and `dry_run` /
+  `apply=false` staging. Routes are rendered into the static protocols
+  `bird_mcp_static4` and `bird_mcp_static6`; new router settings
+  `routes_file`/`routes_preference`.
+- `AGENTS.md` for coding agents and an AI usage section in the README.
 - GitHub Actions CI (format, clippy, tests) and a release workflow that builds
   native binaries for macOS arm64/Intel and Linux arm64/x86_64 on every push to
   `main`, published as a rolling `latest` pre-release. Pushing a `v*` tag creates
   a fixed release with generated notes.
+
+### Fixed
+- Retry `exec` on `ETXTBSY`, which Linux returns when a just-written script is
+  still open for writing in a forked child (hit by the transport tests in CI).
+- `bird_routes` treats `Network not found` for a specific prefix as an empty
+  result instead of a command failure.
 
 ## [0.1.0] - 2026-11-27
 

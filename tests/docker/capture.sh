@@ -16,8 +16,15 @@ docker network inspect birdnet >/dev/null 2>&1 \
   || docker network create --subnet 172.30.0.0/24 birdnet >/dev/null
 docker rm -f bird-r1 bird-r2 >/dev/null 2>&1 || true
 
+# Managed by bird_routes_edit during the live test. Mount a directory, not a
+# single file: the tool replaces the file atomically, which a file bind mount
+# would not see.
+mkdir -p "$here/state"
+[ -f "$here/state/bird-mcp.conf" ] || : >"$here/state/bird-mcp.conf"
+
 docker run -d --name bird-r1 --network birdnet --ip 172.30.0.11 \
-  -v "$here/r1.conf:/etc/bird/bird.conf:ro" bird:3.4.0 >/dev/null
+  -v "$here/r1.conf:/etc/bird/bird.conf:ro" \
+  -v "$here/state:/etc/bird/state" bird:3.4.0 >/dev/null
 docker run -d --name bird-r2 --network birdnet --ip 172.30.0.12 \
   -v "$here/r2.conf:/etc/bird/bird.conf:ro" bird:3.4.0 >/dev/null
 

@@ -166,6 +166,56 @@ impl Router {
         Ok(())
     }
 
+    /// Reads a file when it exists; `None` means it is not there yet.
+    pub async fn read_file_optional(&self, path: &str) -> ToolResult<Option<String>> {
+        validate_path(path)?;
+
+        match self.transport {
+            TransportKind::Local => match tokio::fs::read_to_string(path).await {
+                Ok(content) => Ok(Some(content)),
+                Err(err) if err.kind() == ErrorKind::NotFound => Ok(None),
+                Err(err) => Err(ToolError::Io(format!("cannot read {path}: {err}"))),
+            },
+            TransportKind::Ssh => {
+                let test = format!("test -e {}", shell_quote(path));
+                let output = self.run_shell(&test).await?;
+                if !output.success() {
+                    return Ok(None);
+                }
+                self.read_file(path).await.map(Some)
+            }
+        }
+    }
+
+    /// Removes a file if it exists.
+    pub async fn remove_file(&self, path: &str) -> ToolResult<()> {
+        validate_path(path)?;
+
+        match self.transport {
+            TransportKind::Local => match tokio::fs::remove_file(path).await {
+                Ok(()) => Ok(()),
+                Err(err) if err.kind() == ErrorKind::NotFound => Ok(()),
+                Err(err) => Err(ToolError::Io(format!("cannot remove {path}: {err}"))),
+            },
+            TransportKind::Ssh => {
+                let line = format!("rm -f {}", shell_quote(path));
+                let output = self.run_shell(&line).await?;
+                if !output.success() {
+                    return Err(ToolError::CommandFailed {
+                        router: self.name.clone(),
+                        command: line,
+                        status: match output.code {
+                            Some(code) => format!(" (exit {code})"),
+                            None => " (killed)".to_string(),
+                        },
+                        detail: output.detail(),
+                    });
+                }
+                Ok(())
+            }
+        }
+    }
+
     /// Runs a plain shell command through ssh. Only used with paths and commands
     /// this crate builds; never with caller-supplied text.
     async fn run_shell(&self, line: &str) -> ToolResult<Output> {

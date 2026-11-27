@@ -33,6 +33,10 @@ pub struct Router {
     pub socket: Option<String>,
     /// Config file used by `bird_config_read` and as the default target of `bird_configure`.
     pub config_file: String,
+    /// Include file whose static routes `bird_routes_edit` manages.
+    pub routes_file: Option<String>,
+    /// Preference rendered for the managed static protocols.
+    pub routes_preference: u32,
     /// Read-only unless the operator explicitly opted in.
     pub read_only: bool,
     pub timeout: Duration,
@@ -186,6 +190,8 @@ struct RouterSpec {
     birdc: Option<String>,
     socket: Option<String>,
     config_file: Option<String>,
+    routes_file: Option<String>,
+    routes_preference: Option<u32>,
     read_only: Option<bool>,
     timeout_secs: Option<u64>,
 }
@@ -251,6 +257,7 @@ fn default_local_router(map: &HashMap<&str, &str>) -> RouterSpec {
         birdc: env("BIRD_MCP_BIRDC"),
         socket: env("BIRD_MCP_SOCKET"),
         config_file: env("BIRD_MCP_CONFIG_FILE"),
+        routes_file: env("BIRD_MCP_ROUTES_FILE"),
         ..RouterSpec::default()
     }
 }
@@ -300,6 +307,31 @@ fn build_router(
         None => default_timeout,
     };
 
+    let routes_file = spec.routes_file.or_else(|| {
+        map.get("BIRD_MCP_ROUTES_FILE")
+            .map(|value| value.trim())
+            .filter(|value| !value.is_empty())
+            .map(str::to_string)
+    });
+    if let Some(path) = &routes_file
+        && !path.starts_with('/')
+    {
+        return Err(ToolError::Config(format!(
+            "router '{name}': routes_file must be an absolute path: {path}"
+        )));
+    }
+
+    let routes_preference = spec
+        .routes_preference
+        .or_else(|| {
+            map.get("BIRD_MCP_ROUTES_PREFERENCE")
+                .map(|value| value.trim())
+                .filter(|value| !value.is_empty())
+                .and_then(|value| value.parse().ok())
+        })
+        .unwrap_or(200)
+        .clamp(1, 65535);
+
     Ok(Router {
         name,
         transport,
@@ -326,6 +358,8 @@ fn build_router(
                 .map(str::to_string)
                 .unwrap_or_else(|| DEFAULT_CONFIG_FILE.to_string())
         }),
+        routes_file,
+        routes_preference,
         read_only: spec.read_only.unwrap_or(true),
         timeout,
         ssh_bin: ssh_bin.to_string(),

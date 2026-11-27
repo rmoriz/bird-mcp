@@ -26,9 +26,18 @@ struct Server {
 
 impl Server {
     async fn start(birdc: &str, _home: &std::path::Path) -> Server {
+        let routes_file = format!(
+            "{}/tests/docker/state/bird-mcp.conf",
+            env!("CARGO_MANIFEST_DIR")
+        );
         let routers = json!([
             { "name": "r1", "birdc": birdc, "read_only": true },
-            { "name": "rw", "birdc": birdc, "read_only": false }
+            {
+                "name": "rw",
+                "birdc": birdc,
+                "read_only": false,
+                "routes_file": routes_file
+            }
         ]);
         let docs = format!("{}/bird/doc", env!("CARGO_MANIFEST_DIR"));
         let mut child = Command::new(env!("CARGO_BIN_EXE_bird-mcp"))
@@ -152,24 +161,32 @@ async fn run() {
     );
     assert_eq!(check["ok"], true, "config check: {check}");
 
-    let details = body(
-        &server
-            .call(
-                7,
-                "bird_protocols",
-                json!({ "name": "peer2", "details": true }),
-            )
-            .await,
-    );
-    let attrs = &details["protocols"][0]["attrs"];
-    assert!(
-        attrs
+    // BGP needs a moment to come up on a fresh lab, so poll for Established.
+    let mut established = false;
+    let mut details = Value::Null;
+    for attempt in 0..20u64 {
+        details = body(
+            &server
+                .call(
+                    100 + attempt,
+                    "bird_protocols",
+                    json!({ "name": "peer2", "details": true }),
+                )
+                .await,
+        );
+        established = details["protocols"][0]["attrs"]
             .as_array()
-            .expect("attrs")
-            .iter()
-            .any(|attr| attr["key"] == "BGP state" && attr["value"] == "Established"),
-        "bgp attrs: {attrs}"
-    );
+            .is_some_and(|attrs| {
+                attrs
+                    .iter()
+                    .any(|attr| attr["key"] == "BGP state" && attr["value"] == "Established")
+            });
+        if established {
+            break;
+        }
+        tokio::time::sleep(Duration::from_secs(1)).await;
+    }
+    assert!(established, "bgp did not come up: {details}");
 
     let memory = body(
         &server
@@ -234,6 +251,67 @@ async fn run() {
             .as_str()
             .is_some_and(|output| output.contains("Reconfigured")),
         "apply output: {applied}"
+    );
+
+    // A blackhole route added through the managed include file must show up in
+    // BIRD and disappear again after removal.
+    let added = body(
+        &server
+            .call(
+                13,
+                "bird_routes_edit",
+                json!({
+                    "router": "rw",
+                    "action": "add",
+                    "prefix": "203.99.0.0/24"
+                }),
+            )
+            .await,
+    );
+    assert_eq!(added["changed"], true, "route add: {added}");
+    assert_eq!(added["verification"]["ok"], true, "route add: {added}");
+
+    let installed = body(
+        &server
+            .call(14, "bird_routes", json!({ "prefix": "203.99.0.0/24" }))
+            .await,
+    );
+    assert!(
+        installed["routes"]
+            .as_array()
+            .expect("routes")
+            .iter()
+            .any(|route| route["protocol"] == "bird_mcp_static4"),
+        "route not installed: {installed}"
+    );
+
+    let removed = body(
+        &server
+            .call(
+                15,
+                "bird_routes_edit",
+                json!({
+                    "router": "rw",
+                    "action": "remove",
+                    "prefix": "203.99.0.0/24"
+                }),
+            )
+            .await,
+    );
+    assert_eq!(removed["removed"], 1, "route remove: {removed}");
+
+    let gone = body(
+        &server
+            .call(16, "bird_routes", json!({ "prefix": "203.99.0.0/24" }))
+            .await,
+    );
+    assert!(
+        !gone["routes"]
+            .as_array()
+            .expect("routes")
+            .iter()
+            .any(|route| route["protocol"] == "bird_mcp_static4"),
+        "route still installed: {gone}"
     );
 
     drop(server.stdin);

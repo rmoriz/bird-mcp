@@ -14,6 +14,7 @@ use crate::config::{Config, Router};
 use crate::docs::Docs;
 use crate::error::{ToolError, ToolResult};
 use crate::parse;
+use crate::routes::{self, PROTOCOL_V4, PROTOCOL_V6, RouteKind, StaticRoute};
 
 #[derive(Clone)]
 pub struct Bird {
@@ -24,12 +25,17 @@ pub struct Bird {
 
 struct State {
     config: Config,
+    /// Serializes edits of the managed route file across tool calls.
+    edit_lock: tokio::sync::Mutex<()>,
 }
 
 impl Bird {
     pub fn new(config: Config) -> Bird {
         Bird {
-            state: Arc::new(State { config }),
+            state: Arc::new(State {
+                config,
+                edit_lock: tokio::sync::Mutex::new(()),
+            }),
             tool_router: Bird::tool_router(),
         }
     }
@@ -224,6 +230,58 @@ pub struct ProtocolControlArgs {
     pub direction: Option<String>,
 }
 
+#[derive(Debug, Clone, Copy, Deserialize, JsonSchema, PartialEq, Eq)]
+#[serde(rename_all = "lowercase")]
+pub enum RoutesEditAction {
+    /// Show the managed routes.
+    List,
+    /// Add or replace one route.
+    Add,
+    /// Remove every managed route for the prefix.
+    Remove,
+}
+
+#[derive(Debug, Clone, Copy, Deserialize, JsonSchema, Default, PartialEq, Eq)]
+#[serde(rename_all = "lowercase")]
+pub enum RouteKindArg {
+    /// Silently drop traffic for the prefix (blackhole / RTBH).
+    #[default]
+    Blackhole,
+    /// Answer with ICMP unreachable.
+    Unreachable,
+    /// Answer with ICMP administratively prohibited.
+    Prohibit,
+    /// Forward to a gateway and/or out of an interface; needs `via` and/or `dev`.
+    Via,
+}
+
+#[derive(Debug, Deserialize, JsonSchema)]
+pub struct RoutesEditArgs {
+    /// Router name from the configuration. Omit when only one router is configured.
+    #[serde(default)]
+    pub router: Option<String>,
+    /// list, add or remove.
+    pub action: RoutesEditAction,
+    /// Prefix to add or remove, for example 203.0.113.0/24.
+    #[serde(default)]
+    pub prefix: Option<String>,
+    /// Route type for add (default: blackhole).
+    #[serde(default)]
+    pub kind: Option<RouteKindArg>,
+    /// Gateway IP for kind=via.
+    #[serde(default)]
+    pub via: Option<String>,
+    /// Outgoing interface for kind=via, for example eth0.
+    #[serde(default)]
+    pub dev: Option<String>,
+    /// Reload BIRD after writing the file (default: true). With false the change is only staged.
+    #[serde(default)]
+    pub apply: Option<bool>,
+    /// Show the new file and the check result without touching anything (default: false).
+    #[serde(default)]
+    pub dry_run: Option<bool>,
+}
+
 #[derive(Debug, Deserialize, JsonSchema)]
 pub struct DocsSearchArgs {
     /// Words to look for; all of them must appear on the same line.
@@ -271,6 +329,8 @@ impl Bird {
                 "target": router.target(),
                 "read_only": router.read_only,
                 "config_file": router.config_file,
+                "routes_file": router.routes_file,
+                "routes_preference": router.routes_preference,
                 "timeout_secs": router.timeout.as_secs(),
             });
             if probe {
@@ -391,8 +451,28 @@ impl Bird {
             command.push_str(" count");
         }
 
-        let output = router.run_checked(&command).await?;
-        let parsed = parse::parse_routes(&output.stdout);
+        let output = router.run(&command).await?;
+        // `show route <prefix>` exits non-zero with "Network not found" when the
+        // prefix is absent; that is an empty table for callers, not an error.
+        let missing =
+            !output.success() && parse::strip_banner(&output.stdout).contains("Network not found");
+        if !output.success() && !missing {
+            return Err(ToolError::CommandFailed {
+                router: router.name.clone(),
+                command: command.clone(),
+                status: match output.code {
+                    Some(code) => format!(" (exit {code})"),
+                    None => " (killed)".to_string(),
+                },
+                detail: output.detail(),
+            }
+            .into());
+        }
+        let parsed = if missing {
+            parse::Routes::default()
+        } else {
+            parse::parse_routes(&output.stdout)
+        };
         let limit = args.limit.unwrap_or(200).clamp(1, 5000) as usize;
         let parsed_count = parsed.routes.len();
         let routes: Vec<_> = parsed.routes.into_iter().take(limit).collect();
@@ -449,6 +529,214 @@ impl Bird {
             body["raw"] = json!(parse::strip_banner(&output.stdout));
         }
         respond(body)
+    }
+
+    #[tool(
+        description = "Add, remove or list static routes in the managed include file (routes_file) and \
+                       reload BIRD. `add` with only a prefix creates a blackhole route; kind=via needs \
+                       via (gateway) and/or dev (interface). Writes need read_only = false; \
+                       apply=false stages a change without reloading, dry_run=true shows the new file."
+    )]
+    async fn bird_routes_edit(
+        &self,
+        Parameters(args): Parameters<RoutesEditArgs>,
+    ) -> Result<CallToolResult, ErrorData> {
+        let router = self.router(args.router.as_deref())?;
+
+        if matches!(
+            args.action,
+            RoutesEditAction::Add | RoutesEditAction::Remove
+        ) && router.read_only
+        {
+            return Err(ToolError::ReadOnly {
+                router: router.name.clone(),
+                op: "routes edit".to_string(),
+            }
+            .into());
+        }
+
+        let Some(file) = router.routes_file.clone() else {
+            return Err(ToolError::BadArgs(format!(
+                "router '{}' has no routes_file configured. Set routes_file (or \
+                 BIRD_MCP_ROUTES_FILE) to a file such as /etc/bird/bird-mcp.conf and include it \
+                 from bird.conf with `include \"/etc/bird/bird-mcp.conf\";`.",
+                router.name
+            ))
+            .into());
+        };
+
+        let _guard = self.state.edit_lock.lock().await;
+        let original = router.read_file_optional(&file).await?;
+        let mut parsed = routes::parse(original.as_deref().unwrap_or_default());
+        let dry_run = args.dry_run.unwrap_or(false);
+        let apply = args.apply.unwrap_or(true);
+        let mut changed = false;
+        let mut removed = 0;
+        let mut affected_prefix: Option<String> = None;
+
+        match args.action {
+            RoutesEditAction::List => {}
+            RoutesEditAction::Add => {
+                let prefix = args
+                    .prefix
+                    .as_deref()
+                    .map(str::trim)
+                    .filter(|prefix| !prefix.is_empty())
+                    .ok_or_else(|| {
+                        ToolError::BadArgs("prefix is required for action add".to_string())
+                    })?
+                    .to_string();
+                validate_prefix(&prefix)?;
+                affected_prefix = Some(prefix.clone());
+
+                let kind = match args.kind.unwrap_or_default() {
+                    RouteKindArg::Blackhole => RouteKind::Blackhole,
+                    RouteKindArg::Unreachable => RouteKind::Unreachable,
+                    RouteKindArg::Prohibit => RouteKind::Prohibit,
+                    RouteKindArg::Via => {
+                        let gateway = args
+                            .via
+                            .as_deref()
+                            .map(str::trim)
+                            .filter(|value| !value.is_empty())
+                            .map(str::to_string);
+                        let dev = args
+                            .dev
+                            .as_deref()
+                            .map(str::trim)
+                            .filter(|value| !value.is_empty())
+                            .map(str::to_string);
+
+                        if gateway.is_none() && dev.is_none() {
+                            return Err(ToolError::BadArgs(
+                                "kind via needs via (gateway IP) and/or dev (interface)"
+                                    .to_string(),
+                            )
+                            .into());
+                        }
+                        if let Some(gateway) = &gateway {
+                            validate_ip(gateway, "via")?;
+                        }
+                        if let Some(dev) = &dev {
+                            validate_interface(dev)?;
+                        }
+                        RouteKind::Via { gateway, dev }
+                    }
+                };
+
+                changed = routes::add(&mut parsed.routes, StaticRoute::new(prefix, kind));
+            }
+            RoutesEditAction::Remove => {
+                let prefix = args
+                    .prefix
+                    .as_deref()
+                    .map(str::trim)
+                    .filter(|prefix| !prefix.is_empty())
+                    .ok_or_else(|| {
+                        ToolError::BadArgs("prefix is required for action remove".to_string())
+                    })?
+                    .to_string();
+                validate_prefix(&prefix)?;
+                affected_prefix = Some(prefix.clone());
+
+                removed = routes::remove(&mut parsed.routes, &prefix);
+                changed = removed > 0;
+            }
+        }
+
+        if matches!(args.action, RoutesEditAction::List) {
+            return respond(json!({
+                "router": router.name,
+                "file": file,
+                "exists": original.is_some(),
+                "routes": parsed.routes,
+                "warnings": parsed.warnings,
+                "content": original,
+            }));
+        }
+
+        let new_content = routes::render(&parsed.routes, router.routes_preference);
+
+        if !changed {
+            return respond(json!({
+                "router": router.name,
+                "file": file,
+                "action": if matches!(args.action, RoutesEditAction::Add) { "add" } else { "remove" },
+                "changed": false,
+                "removed": removed,
+                "routes": parsed.routes,
+                "warnings": parsed.warnings,
+                "message": "nothing to do",
+            }));
+        }
+
+        if dry_run {
+            return respond(json!({
+                "router": router.name,
+                "file": file,
+                "action": if matches!(args.action, RoutesEditAction::Add) { "add" } else { "remove" },
+                "changed": true,
+                "dry_run": true,
+                "removed": removed,
+                "routes": parsed.routes,
+                "warnings": parsed.warnings,
+                "content": new_content,
+            }));
+        }
+
+        router.write_file(&file, &new_content).await?;
+
+        let check_output = router.run("configure check").await?;
+        let check = parse::parse_config_check(&check_output.stdout);
+        if !check.ok {
+            restore_route_file(router, &file, original.as_deref()).await?;
+            return Err(ToolError::BadArgs(format!(
+                "configuration check failed, so the route file was restored: {}",
+                check.errors.join(" | ")
+            ))
+            .into());
+        }
+
+        let configure_output = if apply {
+            let output = router.run("configure").await?;
+            if !output.success() {
+                restore_route_file(router, &file, original.as_deref()).await?;
+                // Best effort: load the restored file again so BIRD keeps matching the disk.
+                let _ = router.run("configure").await;
+                return Err(ToolError::CommandFailed {
+                    router: router.name.clone(),
+                    command: "configure".to_string(),
+                    status: match output.code {
+                        Some(code) => format!(" (exit {code})"),
+                        None => " (killed)".to_string(),
+                    },
+                    detail: output.detail(),
+                }
+                .into());
+            }
+            Some(parse::strip_banner(&output.stdout).trim().to_string())
+        } else {
+            None
+        };
+
+        let verification = match (&affected_prefix, apply) {
+            (Some(prefix), true) => Some(verify_managed_route(router, prefix, args.action).await),
+            _ => None,
+        };
+
+        respond(json!({
+            "router": router.name,
+            "file": file,
+            "action": if matches!(args.action, RoutesEditAction::Add) { "add" } else { "remove" },
+            "changed": true,
+            "removed": removed,
+            "routes": parsed.routes,
+            "warnings": parsed.warnings,
+            "check": {"ok": check.ok, "message": check.message, "errors": check.errors},
+            "applied": apply,
+            "configure": configure_output,
+            "verification": verification,
+        }))
     }
 
     #[tool(
@@ -779,6 +1067,65 @@ fn validate_prefix(value: &str) -> ToolResult<()> {
         )));
     }
     Ok(())
+}
+
+fn validate_ip(value: &str, field: &str) -> ToolResult<()> {
+    let value = value.trim();
+    let allowed = !value.is_empty()
+        && value.len() <= 64
+        && value
+            .chars()
+            .all(|character| character.is_ascii_hexdigit() || ":.%".contains(character))
+        && (value.contains('.') || value.contains(':'));
+    if !allowed {
+        return Err(ToolError::BadArgs(format!(
+            "{field} is not an IP address: {value}"
+        )));
+    }
+    Ok(())
+}
+
+fn validate_interface(value: &str) -> ToolResult<()> {
+    let value = value.trim();
+    let allowed = !value.is_empty()
+        && value.len() <= 32
+        && value
+            .chars()
+            .all(|character| character.is_ascii_alphanumeric() || "_.@-".contains(character));
+    if !allowed {
+        return Err(ToolError::BadArgs(format!(
+            "not an interface name: {value}"
+        )));
+    }
+    Ok(())
+}
+
+async fn restore_route_file(router: &Router, file: &str, original: Option<&str>) -> ToolResult<()> {
+    match original {
+        Some(content) => router.write_file(file, content).await,
+        None => router.remove_file(file).await,
+    }
+}
+
+async fn verify_managed_route(router: &Router, prefix: &str, action: RoutesEditAction) -> Value {
+    let command = format!("show route {prefix}");
+    match router.run(&command).await {
+        Ok(output) => {
+            let parsed = parse::parse_routes(&output.stdout);
+            let present = parsed
+                .routes
+                .iter()
+                .any(|route| route.protocol == PROTOCOL_V4 || route.protocol == PROTOCOL_V6);
+            let expected_present = matches!(action, RoutesEditAction::Add);
+            json!({
+                "command": command,
+                "managed_route_present": present,
+                "expected_present": expected_present,
+                "ok": present == expected_present,
+            })
+        }
+        Err(err) => json!({ "command": command, "error": err.to_string() }),
+    }
 }
 
 fn validate_config_path(value: &str) -> ToolResult<String> {
