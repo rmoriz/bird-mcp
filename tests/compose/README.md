@@ -24,13 +24,13 @@ Just ask in natural language; the agent picks the MCP tools.
 
 | Prompt | What happens |
 | --- | --- |
-| „Zeig mir Status und alle BGP-Sessions der fünf Router." | `bird_routers` + `bird_protocols` with `details=true` for r1–r5 |
-| „Welchen Pfad nimmt r1 nach 10.10.4.0/24 und warum?" | `bird_routes` with `match_mode: "for"`, `verbose: true` incl. AS path |
-| „Blackhole 10.10.3.0/24 auf r1." | `bird_routes_edit` add → config check → reload → verification |
-| „Nimm das Blackhole wieder raus." | `bird_routes_edit` remove |
-| „Starte peer3 auf r2 neu." | `bird_protocol_control` restart |
-| „Prüfe die Config auf r5, ohne sie anzuwenden." | `bird_configure` with `mode: "check"` |
-| „Was sagt die BIRD-Doku zu next hop self?" | `bird_docs_search` / `bird_docs_section` |
+| "Show status and all BGP sessions on the five routers." | `bird_routers` + `bird_protocols` with `details=true` for r1–r5 |
+| "Which path does r1 use for 10.10.4.0/24, and why?" | `bird_routes` with `match_mode: "for"`, `verbose: true` incl. AS path |
+| "Blackhole 10.10.3.0/24 on r1." | `bird_routes_edit` add → config check → reload → verification |
+| "Remove that blackhole again." | `bird_routes_edit` remove |
+| "Restart peer3 on r2." | `bird_protocol_control` restart |
+| "Check the config on r5 without applying it." | `bird_configure` with `mode: "check"` |
+| "What does the BIRD documentation say about next hop self?" | `bird_docs_search` / `bird_docs_section` |
 
 The same calls as raw arguments, if you want to see what the agent sends:
 
